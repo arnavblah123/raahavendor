@@ -95,7 +95,18 @@ cp .env.example .env.local
 ```
 
 Open the new `.env.local` file in any text editor and paste your two values
-after the `=` signs. Save it. Then:
+after the `=` signs. Save it.
+
+Now check them before starting the app:
+
+```bash
+npm run check
+```
+
+This tells you in plain language whether the URL and key are right, whether the
+project is reachable, whether Step 2 actually ran, and whether your data is
+properly locked to signed-in users. It will also stop you if you have pasted a
+secret key by mistake. Fix anything it flags, then:
 
 ```bash
 npm run dev
