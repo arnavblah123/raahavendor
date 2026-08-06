@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-cream text-charcoal font-sans antialiased;
+    /* Room for the fixed bottom nav on mobile. */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-serif tracking-tight;
+  }
+
+  /* Never allow a stray wide element to scroll the whole page sideways. */
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Inputs at >=16px so iOS Safari does not zoom on focus. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-lg border border-line bg-white/70 shadow-[0_1px_2px_rgba(43,42,40,0.04)];
+  }
+
+  .tap {
+    /* Minimum comfortable thumb target on a phone. */
+    @apply inline-flex min-h-11 min-w-11 items-center justify-center;
+  }
+
+  .skeleton {
+    @apply relative overflow-hidden rounded bg-parchment;
+  }
+
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+    animation: shimmer 1.4s infinite;
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
