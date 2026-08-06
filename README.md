@@ -117,23 +117,44 @@ Step 3.
 
 ### Step 6 — Put it online
 
-```bash
-npm install -g vercel
-vercel deploy
-```
+The easiest way needs no command line at all, and re-deploys itself every time
+the code changes.
 
-Follow the prompts. When it asks for environment variables, add the same two
-you put in `.env.local`:
+1. Go to **[vercel.com](https://vercel.com)** and sign in **with GitHub**.
+2. Click **Add New… → Project**.
+3. Find `raahavendor` in the list and click **Import**.
+4. Leave every build setting alone — Vercel detects Next.js on its own.
+5. Open **Environment Variables** and add the same two from your `.env.local`:
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-  (or `NEXT_PUBLIC_SUPABASE_ANON_KEY` if you have an older project)
+   | Name | Value |
+   |---|---|
+   | `NEXT_PUBLIC_SUPABASE_URL` | your project URL |
+   | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | your publishable key |
 
-You can also add them later at **vercel.com → your project → Settings →
-Environment Variables**. After adding them, redeploy once so they take effect.
+   (Use `NEXT_PUBLIC_SUPABASE_ANON_KEY` instead if you have an older project.)
 
-Then run `vercel --prod` to publish it. You will get a link you can open on your
-phone and save to your home screen.
+   **Add them before the first deploy.** If you forget, the build succeeds but
+   every page fails with "Supabase is not configured" until you add them and
+   redeploy.
+
+6. Click **Deploy** and wait two or three minutes.
+
+You will get a link like `raahavendor.vercel.app`. Open it on your phone and
+use **Share → Add to Home Screen** so it behaves like an app.
+
+From then on, every push to the `claude/raaha-vendor-tracker-9lrnii` branch
+deploys automatically.
+
+#### After the first deploy
+
+In Supabase, go to **Authentication → URL Configuration** and set **Site URL**
+to your new Vercel address. Nothing breaks if you skip it today — the app signs
+in with a password and never sends a link — but it matters the day you want
+password-reset emails to work.
+
+> **Forgotten passwords** are reset by you, in Supabase under
+> **Authentication → Users → … → Reset password**. There is deliberately no
+> "forgot password" link in the app.
 
 ### Step 7 — Add your team
 
