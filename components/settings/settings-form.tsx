@@ -238,7 +238,7 @@ export function SettingsForm({
 
       <FieldGroup
         title="Users"
-        description="Create logins in your Supabase dashboard under Authentication → Users. They appear here after their first sign-in."
+        description="Create logins in your Supabase dashboard under Authentication → Users. Everyone after the first account is added as staff, and appears here straight away."
       >
         <ul className="divide-y divide-line rounded-md border border-line bg-white">
           {users.map((u) => (

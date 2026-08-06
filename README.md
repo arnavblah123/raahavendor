@@ -43,9 +43,27 @@ You only ever do this once.
 3. Enter your email and a password. Turn **Auto Confirm User** ON.
 4. Click **Create user**.
 
-> **Important:** the *first* person to sign in automatically becomes the admin —
-> that should be you. Create your own login and sign in once before you add
-> anybody else.
+> **Important:** the *first account created* automatically becomes the admin.
+> This happens the moment you click **Create user** — not when they first sign
+> in. So create your own login before anybody else's.
+>
+> If you get the order wrong, fix it in the SQL Editor:
+>
+> ```sql
+> update profiles set role = 'admin'
+>  where id = (select id from auth.users where email = 'you@raaha.in');
+>
+> update profiles set role = 'staff'
+>  where id = (select id from auth.users where email = 'someone.else@raaha.in');
+> ```
+>
+> To see who currently holds which role:
+>
+> ```sql
+> select u.email, p.role
+>   from profiles p join auth.users u on u.id = p.id
+>  order by p.role, u.email;
+> ```
 
 ### Step 4 — Copy your two settings
 
@@ -109,9 +127,9 @@ phone and save to your home screen.
 ### Step 7 — Add your team
 
 Add each staff member in Supabase under **Authentication → Users**, exactly as
-you did for yourself in Step 3. They become **staff** automatically. Once they
-have signed in once, they appear in **Settings → Users** in the app, where you
-can promote or disable them.
+you did for yourself in Step 3. Everyone after the first account becomes
+**staff** automatically, and they appear in **Settings → Users** in the app
+straight away, where you can promote or disable them.
 
 ---
 

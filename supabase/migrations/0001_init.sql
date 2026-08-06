@@ -40,8 +40,10 @@ comment on table profiles is
   'App users. Created automatically on first sign-up via the handle_new_user trigger.
    You create the login itself in Supabase Dashboard > Authentication > Users.';
 
--- The FIRST user to sign up becomes admin; everyone after is staff.
--- That way you are not locked out of your own app on day one.
+-- The FIRST account created becomes admin; everyone after is staff. Note this
+-- fires on user creation, not on first sign-in — so whoever you add first in
+-- the Supabase dashboard is the admin. That way you are not locked out of your
+-- own app on day one.
 create or replace function handle_new_user()
 returns trigger
 language plpgsql
