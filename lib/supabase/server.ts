@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { SUPABASE_KEY, SUPABASE_URL, assertSupabaseEnv } from './env'
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions }
 
@@ -8,11 +9,12 @@ type CookieToSet = { name: string; value: string; options?: CookieOptions }
  * Always `await createClient()` — cookies() is async in Next 15.
  */
 export async function createClient() {
+  assertSupabaseEnv()
   const cookieStore = await cookies()
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    SUPABASE_URL,
+    SUPABASE_KEY,
     {
       cookies: {
         getAll() {

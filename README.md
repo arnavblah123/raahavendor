@@ -49,15 +49,23 @@ You only ever do this once.
 
 ### Step 4 — Copy your two settings
 
-1. Click **Project Settings** (the gear icon) → **API**.
-2. You need two values from this page:
-   - **Project URL**
-   - the **anon public** key (the long one starting with `eyJ`)
+1. Click **Project Settings** (the gear icon) → **API Keys**.
+2. You need two values:
+   - **Project URL** — under *Project Settings → Data API*. It looks like
+     `https://abcdefghijkl.supabase.co`
+   - **Publishable key** — on the **API Keys** tab. It starts with
+     `sb_publishable_`. If you do not see one, click **Create new API keys**.
 
 Keep this tab open — you will paste them in the next step.
 
-> Never copy the **service_role** key. The app does not need it and it would
-> bypass all your security.
+> **If your project is older than November 2025** it will have an *anon public*
+> key (a long string starting with `eyJ`) on a **Legacy** tab instead. That
+> works too — use it, and put it on the `NEXT_PUBLIC_SUPABASE_ANON_KEY` line in
+> Step 5 rather than the publishable one.
+
+> Never copy a **Secret key** (`sb_secret_…`) or the old **service_role** key.
+> The app does not need one, and it would bypass every security rule you just
+> set up in Step 2.
 
 ### Step 5 — Run it on your computer
 
@@ -89,7 +97,8 @@ Follow the prompts. When it asks for environment variables, add the same two
 you put in `.env.local`:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+  (or `NEXT_PUBLIC_SUPABASE_ANON_KEY` if you have an older project)
 
 You can also add them later at **vercel.com → your project → Settings →
 Environment Variables**. After adding them, redeploy once so they take effect.
