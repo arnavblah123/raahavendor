@@ -11,12 +11,46 @@
  * whichever kind of project you have.
  */
 
-export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+/**
+ * Clean up a pasted Project URL.
+ *
+ * Copying from the dashboard very easily picks up a trailing slash, and it is
+ * an easy slip to paste the dashboard address instead. Neither is obvious from
+ * the resulting error: supabase-js strips a single trailing slash but not two,
+ * and never strips a path, so the request goes to `//auth/v1/token` or
+ * `/dashboard/auth/v1/token` and Supabase's gateway answers with the
+ * unhelpful "Invalid path specified in request URL".
+ *
+ * Rather than let that reach the user, normalise the value here.
+ */
+export function normaliseSupabaseUrl(raw: string | undefined): string {
+  const trimmed = (raw ?? '').trim()
+  if (!trimmed) return ''
 
-export const SUPABASE_KEY =
+  // Strip any number of trailing slashes.
+  const noTrailing = trimmed.replace(/\/+$/, '')
+
+  try {
+    const url = new URL(noTrailing)
+    // A hosted Supabase project is always served from the bare origin, so any
+    // path on one of their domains is a paste error.
+    if (/\.supabase\.(co|in|red)$/i.test(url.hostname)) {
+      return url.origin
+    }
+    return noTrailing
+  } catch {
+    // Not a parseable URL — hand it back and let assertSupabaseEnv complain.
+    return noTrailing
+  }
+}
+
+export const SUPABASE_URL = normaliseSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL)
+
+export const SUPABASE_KEY = (
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
   ''
+).trim()
 
 /**
  * Fail loudly at startup rather than with a confusing "fetch failed" on the

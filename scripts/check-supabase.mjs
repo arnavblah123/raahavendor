@@ -41,8 +41,11 @@ if (!file) {
 }
 ok(`Found ${file}`)
 
-const url = (vars.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/+$/, '')
-const key = vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || vars.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+// Check what you actually pasted, not a cleaned-up version of it — otherwise
+// this reports "looks right" while the app fails on the very same value.
+const rawUrl = (vars.NEXT_PUBLIC_SUPABASE_URL || '').trim()
+const url = rawUrl.replace(/\/+$/, '')
+const key = (vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || vars.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim()
 
 let failed = false
 
@@ -54,8 +57,19 @@ if (!url) {
   bad('That is the dashboard address, not the Project URL',
       `You pasted: ${url}\n      You need the one that looks like https://abcdefghijkl.supabase.co\n      Find it under Project Settings → Data API → Project URL.`)
   failed = true
-} else if (/^https:\/\/[a-z0-9-]+\.supabase\.(co|in|red)$/.test(url)) {
-  ok('Project URL looks right', url)
+} else if (/^https:\/\/[a-z0-9-]+\.supabase\.(co|in|red)(\/.*)?$/.test(rawUrl)) {
+  // Right project, but a trailing slash or a path makes sign-in fail with
+  // "Invalid path specified in request URL", which names nothing useful.
+  if (rawUrl !== url || new URL(url).pathname !== '/') {
+    warn(
+      'Project URL has an extra slash or path on the end',
+      `You have:  ${rawUrl}\n      Should be: ${new URL(url).origin}\n` +
+        '      The app trims this for you, but fix it in .env.local (and in\n' +
+        '      Vercel → Settings → Environment Variables) so nothing depends on that.',
+    )
+  } else {
+    ok('Project URL looks right', url)
+  }
 } else {
   // Could be a self-hosted instance or a custom domain — unusual, not wrong.
   warn('Project URL is not a standard supabase.co address', `Got: ${url}  — carrying on, in case you are self-hosting.`)
