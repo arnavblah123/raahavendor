@@ -207,6 +207,13 @@ overdue or only urgent orders.
 
 ---
 
+## Vendors from the old software
+
+They are already loaded — Archana imports them once from **Settings → Import
+vendors**. Two of them (R.F. Couture and Shubhandam) had made-up phone numbers
+in the old software, so their phone is blank; add the real number on their
+vendor page when you have it.
+
 ## Vendor pages
 
 Tap **Vendors**, then any vendor. You will see every order you have placed with
