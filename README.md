@@ -165,7 +165,14 @@ password-reset emails to work.
 > **Authentication → Users → … → Reset password**. There is deliberately no
 > "forgot password" link in the app.
 
-### Step 7 — Add your team
+### Step 7 — Bring in your vendors
+
+Your vendor list from the old software is already in this project, under
+`data/vendors/`. In the app, go to **Settings → Import vendors** and tap the
+button. All sixty come in with their phone numbers and cities; anything already
+there is skipped. That is the only step — no files to open, nothing to paste.
+
+### Step 8 — Add your team
 
 Add each staff member in Supabase under **Authentication → Users**, exactly as
 you did for yourself in Step 3. Everyone after the first account becomes

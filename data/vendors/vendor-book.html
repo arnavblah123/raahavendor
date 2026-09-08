@@ -1,0 +1,218 @@
+<title>Raaha Vendor Book</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+:root {
+  --ground:#FBF8F2; --panel:#FFFFFF; --ink:#2B2A28; --body:#4A4540; --muted:#7A736A;
+  --line:#E5DED2; --gold:#A8842F; --gold-wash:#F6EED9; --warn:#B8552E; --warn-wash:#FBEBE3;
+  --font-display:'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-body:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:#1B1917; --panel:#242120; --ink:#EEE7DA; --body:#CFC6B7; --muted:#A79E90;
+    --line:#3A3531; --gold:#D2AA55; --gold-wash:#2E2A1D; --warn:#E0865E; --warn-wash:#3A261D;
+  }
+}
+:root[data-theme="dark"] {
+  --ground:#1B1917; --panel:#242120; --ink:#EEE7DA; --body:#CFC6B7; --muted:#A79E90;
+  --line:#3A3531; --gold:#D2AA55; --gold-wash:#2E2A1D; --warn:#E0865E; --warn-wash:#3A261D;
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--ground); color:var(--body); font-family:var(--font-body); font-size:14px; line-height:1.5; }
+.wrap { max-width:1080px; margin:0 auto; padding:32px 20px 64px; }
+header { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px 32px; border-bottom:1px solid var(--line); padding-bottom:20px; }
+.brand { font-family:var(--font-display); color:var(--ink); }
+.brand h1 { font-size:38px; font-weight:600; margin:0; line-height:1; text-wrap:balance; }
+.brand p { margin:6px 0 0; font-family:var(--font-body); font-size:13px; color:var(--muted); }
+.stats { display:flex; gap:28px; }
+.stat { display:flex; flex-direction:column; }
+.stat b { font-family:var(--font-display); font-size:30px; font-weight:600; line-height:1; color:var(--ink); font-variant-numeric:tabular-nums; }
+.stat span { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-top:4px; }
+.tools { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:20px 0 14px; }
+.tools input { flex:1 1 240px; height:40px; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:var(--ink); padding:0 12px; font:inherit; font-size:15px; }
+.tools input:focus { outline:2px solid var(--gold); outline-offset:1px; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; }
+.chip { height:32px; padding:0 12px; border-radius:999px; border:1px solid var(--line); background:var(--panel); color:var(--body); font:inherit; font-size:13px; cursor:pointer; }
+.chip[aria-pressed="true"] { background:var(--gold-wash); border-color:var(--gold); color:var(--gold); font-weight:600; }
+.chip:focus-visible { outline:2px solid var(--gold); outline-offset:1px; }
+.count { font-size:13px; color:var(--muted); margin:0 0 8px; }
+.tablewrap { overflow-x:auto; border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+table { width:100%; border-collapse:collapse; min-width:720px; }
+th { text-align:left; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600; padding:12px 14px; border-bottom:1px solid var(--line); background:var(--ground); }
+td { padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--body); }
+tr:last-child td { border-bottom:0; }
+td.name { color:var(--ink); font-weight:500; }
+td.num { font-variant-numeric:tabular-nums; white-space:nowrap; }
+td.num a { color:var(--ink); text-decoration:none; border-bottom:1px solid var(--line); }
+td.num a:hover { border-color:var(--gold); }
+.none { color:var(--muted); }
+.flag { display:inline-block; font-size:11px; font-weight:600; letter-spacing:.04em; padding:2px 8px; border-radius:999px; background:var(--warn-wash); color:var(--warn); white-space:nowrap; }
+.cat { font-size:12px; color:var(--muted); }
+section.sql { margin-top:40px; }
+section.sql h2 { font-family:var(--font-display); font-size:26px; font-weight:600; color:var(--ink); margin:0 0 6px; }
+section.sql p { max-width:62ch; margin:0 0 14px; }
+.sqlbar { display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--gold-wash); border:1px solid var(--line); border-bottom:0; border-radius:8px 8px 0 0; padding:8px 12px; font-size:12px; color:var(--muted); }
+button.copy { height:32px; padding:0 14px; border-radius:6px; border:0; background:var(--gold); color:#fff; font:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+button.copy:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+pre { margin:0; max-height:420px; overflow:auto; border:1px solid var(--line); border-radius:0 0 8px 8px; background:var(--panel); padding:14px; font-family:var(--font-mono); font-size:12px; line-height:1.55; color:var(--body); }
+ol.steps { padding-left:20px; margin:0 0 18px; max-width:62ch; }
+ol.steps li { margin:4px 0; }
+.foot { margin-top:36px; font-size:12px; color:var(--muted); max-width:70ch; }
+@media (max-width:600px) { .brand h1 { font-size:32px; } .stats { gap:20px; } .stat b { font-size:24px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Raaha Vendor Book</h1>
+      <p>Extracted from the old software's vCard export · 60 vendors</p>
+    </div>
+    <div class="stats">
+      <div class="stat"><b>60</b><span>Vendors</span></div>
+      <div class="stat"><b>38</b><span>With phone</span></div>
+      <div class="stat"><b>22</b><span>No phone</span></div>
+      <div class="stat"><b>5</b><span>Cities</span></div>
+    </div>
+  </header>
+
+  <div class="tools">
+    <input id="q" type="search" placeholder="Search name, area, pincode…" aria-label="Search vendors">
+    <div class="chips" id="chips" role="group" aria-label="Filter by city">
+      <button class="chip" type="button" data-city="" aria-pressed="true">All</button>
+      <button class="chip" type="button" data-city="Kolkata" aria-pressed="false">Kolkata · 24</button><button class="chip" type="button" data-city="Delhi" aria-pressed="false">Delhi · 16</button><button class="chip" type="button" data-city="Mumbai" aria-pressed="false">Mumbai · 11</button><button class="chip" type="button" data-city="Jaipur" aria-pressed="false">Jaipur · 4</button><button class="chip" type="button" data-city="Unknown" aria-pressed="false">Unknown · 3</button><button class="chip" type="button" data-city="Noida" aria-pressed="false">Noida · 2</button>
+    </div>
+  </div>
+  <p class="count" id="count"></p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Vendor</th><th>Phone</th><th>City</th><th>Area · pincode</th><th>Note</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <section class="sql">
+    <h2>Load them into the app</h2>
+    <ol class="steps">
+      <li>Open your Supabase project → <b>SQL Editor</b> → <b>New query</b>.</li>
+      <li>Press <b>Copy SQL</b> below and paste it in.</li>
+      <li>Press <b>Run</b>. All 60 vendors appear under Vendors in the app straight away.</li>
+    </ol>
+    <p>Any vendor whose name already exists is skipped, so running it twice is harmless. Categories are set to Other (Embroidery for Bhairav Embro) — change them in the app as you go.</p>
+    <div class="sqlbar"><span>raaha-vendors-import.sql · 73 lines</span><button class="copy" type="button" id="copy">Copy SQL</button></div>
+    <pre id="sql">-- =====================================================================
+--  Raaha vendor import — extracted from the old software&#x27;s vCard export
+--  Paste into the Supabase SQL Editor and press Run. Safe to run once.
+--  A vendor whose name already exists is skipped, not duplicated.
+-- =====================================================================
+
+insert into vendors (name, category, phone, email, city, notes)
+select v.name, v.category, v.phone, v.email, v.city, v.notes
+from (values
+  (&#x27;A R ENTERPRISES&#x27;, &#x27;other&#x27;, &#x27;+918777817658&#x27;, null, &#x27;Kolkata&#x27;, &#x27;700017 · West Bengal&#x27;),
+  (&#x27;AARAMBH BRIDAL STUDIO&#x27;, &#x27;other&#x27;, &#x27;+919038069686&#x27;, null, &#x27;Kolkata&#x27;, &#x27;700016 · West Bengal&#x27;),
+  (&#x27;AKSH DESIGNS&#x27;, &#x27;other&#x27;, null, null, &#x27;Kolkata&#x27;, &#x27;New Alipore · 700053 · West Bengal&#x27;),
+  (&#x27;ANAAYA CREATIONS(PURPLE PEACOCK)&#x27;, &#x27;other&#x27;, &#x27;+918910001518&#x27;, null, &#x27;Kolkata&#x27;, &#x27;700026 · West Bengal&#x27;),
+  (&#x27;ATWISHA FASHION HOUSE&#x27;, &#x27;other&#x27;, &#x27;+919331147100&#x27;, null, &#x27;Kolkata&#x27;, &#x27;700016 · West Bengal&#x27;),
+  (&#x27;B R K APPARELS&#x27;, &#x27;other&#x27;, &#x27;+919818299446&#x27;, null, &#x27;Noida&#x27;, &#x27;201301 · Uttar Pradesh&#x27;),
+  (&#x27;B R KAPOOR &amp; SONS PRIVATE LIMITED&#x27;, &#x27;other&#x27;, null, null, &#x27;Delhi&#x27;, &#x27;110006 · Delhi&#x27;),
+  (&#x27;BHAIRAV EMBRO DESIGN PRIVATE LIMITED&#x27;, &#x27;embroidery&#x27;, &#x27;+918700495456&#x27;, null, &#x27;Delhi&#x27;, &#x27;Okhla Industrial Area Phase-1 · 110020 · Delhi&#x27;),
+  (&#x27;BINOD KUMAR CHOUDHARY&#x27;, &#x27;other&#x27;, &#x27;+919830142090&#x27;, null, &#x27;Kolkata&#x27;, &#x27;700007 · West Bengal&#x27;),
+  (&#x27;CELEBRATION CLOTHING PRIVATE LIMITED&#x27;, &#x27;other&#x27;, &#x27;+919820162480&#x27;, null, &#x27;Mumbai&#x27;, &#x27;Dadar West · 400028 · Maharashtra&#x27;),
+  (&#x27;CHITRAKAR APPARELS PRIVATE LIMITED&#x27;, &#x27;other&#x27;, null, null, &#x27;Kolkata&#x27;, &#x27;Park Street · 700016 · West Bengal&#x27;),
+  (&#x27;DEAVYA FASHION DIVAS&#x27;, &#x27;other&#x27;, null, null, &#x27;Delhi&#x27;, &#x27;Kamla Nagar · 110007 · Delhi&#x27;),
+  (&#x27;DIYA CREATIONS&#x27;, &#x27;other&#x27;, &#x27;+918851869989&#x27;, null, &#x27;Delhi&#x27;, &#x27;Mansarover Garden, Kirti Nagar · 110015 · Delhi&#x27;),
+  (&#x27;DORI DESIGN STUDIO&#x27;, &#x27;other&#x27;, &#x27;+919326464734&#x27;, null, &#x27;Mumbai&#x27;, &#x27;400028 · Maharashtra&#x27;),
+  (&#x27;FASHION BLOOMS&#x27;, &#x27;other&#x27;, &#x27;+918777084802&#x27;, null, &#x27;Kolkata&#x27;, &#x27;700053 · West Bengal&#x27;),
+  (&#x27;FLAUNT&#x27;, &#x27;other&#x27;, null, null, &#x27;Kolkata&#x27;, &#x27;Salt Lake City · 700064 · West Bengal&#x27;),
+  (&#x27;GEON ATTIRE&#x27;, &#x27;other&#x27;, &#x27;+919831874988&#x27;, null, &#x27;Kolkata&#x27;, &#x27;700007 · West Bengal&#x27;),
+  (&#x27;HARYALI DESIGNER HUB&#x27;, &#x27;other&#x27;, &#x27;+919831350720&#x27;, null, &#x27;Kolkata&#x27;, &#x27;700016 · West Bengal&#x27;),
+  (&#x27;HOUSE OF RITAS PRIVATE LIMITED&#x27;, &#x27;other&#x27;, null, null, &#x27;Delhi&#x27;, &#x27;110028 · Delhi&#x27;),
+  (&#x27;INIZIO TRENDZ(SAANSH)&#x27;, &#x27;other&#x27;, null, null, null, &#x27;West Bengal&#x27;),
+  (&#x27;ISHUM DESIGNS&#x27;, &#x27;other&#x27;, &#x27;+919818299443&#x27;, null, &#x27;Noida&#x27;, &#x27;201301 · Uttar Pradesh&#x27;),
+  (&#x27;KALIGHATA R N FASHION&#x27;, &#x27;other&#x27;, &#x27;+918981205009&#x27;, null, &#x27;Kolkata&#x27;, &#x27;700084 · West Bengal&#x27;),
+  (&#x27;KAMAKSHI&#x27;, &#x27;other&#x27;, &#x27;+919920078295&#x27;, null, &#x27;Mumbai&#x27;, &#x27;KAMAKSHI DESING STUDIO,10 BHOOMI PLAZA, MASJID GALLI, CEOSS BHAVANI SHANKAR ROAD, DADAR(W) MUMBAI-40 · 400028 · Maharashtra&#x27;),
+  (&#x27;KANYA&#x27;, &#x27;other&#x27;, &#x27;+91114150037&#x27;, null, &#x27;Delhi&#x27;, &#x27;110005 · Delhi · Delhi landline&#x27;),
+  (&#x27;KASAPA CREATION&#x27;, &#x27;other&#x27;, &#x27;+919810230747&#x27;, null, &#x27;Delhi&#x27;, &#x27;Tagore Garden , New Delhi · 110027 · Delhi&#x27;),
+  (&#x27;KIRTI CREATION&#x27;, &#x27;other&#x27;, null, null, &#x27;Delhi&#x27;, &#x27;110028 · Delhi&#x27;),
+  (&#x27;M/s ORCHID&#x27;, &#x27;other&#x27;, &#x27;+918178127853&#x27;, null, &#x27;Delhi&#x27;, &#x27;110028 · Delhi&#x27;),
+  (&#x27;MAIDENS CREATION&#x27;, &#x27;other&#x27;, &#x27;+917021136150&#x27;, null, &#x27;Mumbai&#x27;, &#x27;Dadar West · 400028 · Maharashtra&#x27;),
+  (&#x27;NARITVA&#x27;, &#x27;other&#x27;, &#x27;+919662057022&#x27;, &#x27;naritva68@gmail.com&#x27;, &#x27;Kolkata&#x27;, &#x27;700017 · West Bengal&#x27;),
+  (&#x27;NEHA COUTURE&#x27;, &#x27;other&#x27;, &#x27;+919930022113&#x27;, null, &#x27;Mumbai&#x27;, &#x27;M J Marjket · 400002 · Maharashtra&#x27;),
+  (&#x27;NIKHAAR FASHIONS HERITAGE&#x27;, &#x27;other&#x27;, &#x27;+919529345345&#x27;, null, &#x27;Jaipur&#x27;, &#x27;Trimurti Circle · 302004 · Rajasthan&#x27;),
+  (&#x27;NILESH CREATIONS&#x27;, &#x27;other&#x27;, &#x27;+91114019080&#x27;, null, &#x27;Delhi&#x27;, &#x27;110015 · Delhi · Delhi landline&#x27;),
+  (&#x27;NILIMA CREATIONS&#x27;, &#x27;other&#x27;, &#x27;+918910046625&#x27;, null, &#x27;Kolkata&#x27;, &#x27;700016 · West Bengal&#x27;),
+  (&#x27;NITYA) SARBANI SAREES PVT LTD kolkata&#x27;, &#x27;other&#x27;, &#x27;+919874183445&#x27;, null, &#x27;Kolkata&#x27;, &#x27;Park Street · 700016 · West Bengal&#x27;),
+  (&#x27;ONAYA FASHIONS PRIVATE LIMITED&#x27;, &#x27;other&#x27;, &#x27;+916292240588&#x27;, null, &#x27;Kolkata&#x27;, &#x27;700016 · West Bengal&#x27;),
+  (&#x27;PRASHVVITA FASHION PRIVATE LIMITED&#x27;, &#x27;other&#x27;, null, null, &#x27;Mumbai&#x27;, &#x27;400086 · Maharashtra&#x27;),
+  (&#x27;QUEEN&#x27;&#x27;S CREATION&#x27;, &#x27;other&#x27;, null, null, &#x27;Kolkata&#x27;, &#x27;700016 · West Bengal&#x27;),
+  (&#x27;R.F. DESIGHERS&#x27;, &#x27;other&#x27;, &#x27;+919829373990&#x27;, null, &#x27;Jaipur&#x27;, &#x27;M.i Road Jaipur · 302003 · Rajasthan&#x27;),
+  (&#x27;R.F.COUTURE&#x27;, &#x27;other&#x27;, null, null, &#x27;Jaipur&#x27;, &#x27;302001 · Rajasthan · dummy number 1234567899 in old software — get the real one&#x27;),
+  (&#x27;RADHA TRADITIONS&#x27;, &#x27;other&#x27;, null, null, &#x27;Mumbai&#x27;, &#x27;Dadar West · 400028 · Maharashtra&#x27;),
+  (&#x27;RARO HOUSE OF FASHION PRIVATE LIMITED&#x27;, &#x27;other&#x27;, &#x27;+919999016771&#x27;, null, &#x27;Delhi&#x27;, &#x27;Pvr · 110028 · Delhi&#x27;),
+  (&#x27;RASIYA&#x27;, &#x27;other&#x27;, &#x27;+919811400262&#x27;, null, &#x27;Delhi&#x27;, &#x27;Phase-1 · 110028 · Delhi&#x27;),
+  (&#x27;RITIKA &amp; RASHIKA ENTERPRISE&#x27;, &#x27;other&#x27;, null, null, &#x27;Kolkata&#x27;, &#x27;700016 · West Bengal&#x27;),
+  (&#x27;RITRAS FASHION DESIGNER STUDIO&#x27;, &#x27;other&#x27;, &#x27;+919831787026&#x27;, null, &#x27;Kolkata&#x27;, &#x27;700016 · West Bengal&#x27;),
+  (&#x27;ROOP RANG FASHION PRIVATE LIMITED&#x27;, &#x27;other&#x27;, &#x27;+919831007971&#x27;, null, &#x27;Kolkata&#x27;, &#x27;Park Street · 700016 · West Bengal&#x27;),
+  (&#x27;ROSHANS SAREE PALACE PRIVATE LIMITED&#x27;, &#x27;other&#x27;, null, null, &#x27;Delhi&#x27;, &#x27;110005 · Delhi&#x27;),
+  (&#x27;SAHELI FASHIONS PRIVATE LIMITED&#x27;, &#x27;other&#x27;, null, null, &#x27;Mumbai&#x27;, &#x27;Dadar West · 400028 · Maharashtra&#x27;),
+  (&#x27;SHUBHANDAM&#x27;, &#x27;other&#x27;, null, null, &#x27;Jaipur&#x27;, &#x27;302003 · Rajasthan · dummy number 1234567890 in old software — get the real one&#x27;),
+  (&#x27;SONA AGRAWAL&#x27;, &#x27;other&#x27;, &#x27;+919831627654&#x27;, null, &#x27;Kolkata&#x27;, &#x27;700038 · West Bengal&#x27;),
+  (&#x27;STUDIO AMAS&#x27;, &#x27;other&#x27;, &#x27;+918700496602&#x27;, null, &#x27;Delhi&#x27;, &#x27;Okhla Industrial Area · 110020 · Delhi&#x27;),
+  (&#x27;SUMAN SELECTION&#x27;, &#x27;other&#x27;, &#x27;+919874045670&#x27;, null, &#x27;Kolkata&#x27;, &#x27;700016 · West Bengal&#x27;),
+  (&#x27;SUMAN&#x27;&#x27;S LABEL&#x27;, &#x27;other&#x27;, null, null, &#x27;Kolkata&#x27;, &#x27;700020 · West Bengal&#x27;),
+  (&#x27;TANKHI DESIGNS1 PRIVATE LTD&#x27;, &#x27;other&#x27;, &#x27;+918369452674&#x27;, null, &#x27;Mumbai&#x27;, &#x27;Goregaon East · 400063 · Maharashtra&#x27;),
+  (&#x27;TANSHI FASHIONS PRIVATE LIMITED&#x27;, &#x27;other&#x27;, null, null, &#x27;Kolkata&#x27;, &#x27;Park Street · 700016 · West Bengal&#x27;),
+  (&#x27;THAKUR EXCLUSIVE&#x27;, &#x27;other&#x27;, null, null, &#x27;Delhi&#x27;, &#x27;Delhi&#x27;),
+  (&#x27;THE MERAKI STUDIO&#x27;, &#x27;other&#x27;, &#x27;+917891099995&#x27;, null, &#x27;Mumbai&#x27;, &#x27;400028 · Maharashtra&#x27;),
+  (&#x27;UK CREATION&#x27;, &#x27;other&#x27;, null, null, null, &#x27;West Bengal&#x27;),
+  (&#x27;USHA BAGRI&#x27;, &#x27;other&#x27;, null, null, null, &#x27;West Bengal&#x27;),
+  (&#x27;VALRAH FASHION HOUSE&#x27;, &#x27;other&#x27;, &#x27;+919619611187&#x27;, null, &#x27;Mumbai&#x27;, &#x27;400028 · Maharashtra&#x27;),
+  (&#x27;VANNIKAA MALIK&#x27;, &#x27;other&#x27;, null, null, &#x27;Delhi&#x27;, &#x27;110028 · Delhi&#x27;)
+) as v(name, category, phone, email, city, notes)
+where not exists (select 1 from vendors x where lower(x.name) = lower(v.name));
+
+-- 60 vendors. Afterwards: select name, city, phone from vendors order by name;
+</pre>
+  </section>
+
+  <p class="foot">Phones are in +91 form for the app's Call and WhatsApp buttons. Kanya and Nilesh Creations have Delhi landlines (Call works, WhatsApp will not). R.F. Couture and Shubhandam had dummy numbers in the old software and are left blank. The "DEFAULT" placeholder record was dropped.</p>
+</div>
+
+<script>
+const DATA = [{"name": "A R ENTERPRISES", "phone": "+918777817658", "email": "", "city": "Kolkata", "area": "", "pincode": "700017", "state": "West Bengal", "category": "other", "notes": "700017 · West Bengal"}, {"name": "AARAMBH BRIDAL STUDIO", "phone": "+919038069686", "email": "", "city": "Kolkata", "area": "", "pincode": "700016", "state": "West Bengal", "category": "other", "notes": "700016 · West Bengal"}, {"name": "AKSH DESIGNS", "phone": "", "email": "", "city": "Kolkata", "area": "New Alipore", "pincode": "700053", "state": "West Bengal", "category": "other", "notes": "New Alipore · 700053 · West Bengal"}, {"name": "ANAAYA CREATIONS(PURPLE PEACOCK)", "phone": "+918910001518", "email": "", "city": "Kolkata", "area": "", "pincode": "700026", "state": "West Bengal", "category": "other", "notes": "700026 · West Bengal"}, {"name": "ATWISHA FASHION HOUSE", "phone": "+919331147100", "email": "", "city": "Kolkata", "area": "", "pincode": "700016", "state": "West Bengal", "category": "other", "notes": "700016 · West Bengal"}, {"name": "B R K APPARELS", "phone": "+919818299446", "email": "", "city": "Noida", "area": "", "pincode": "201301", "state": "Uttar Pradesh", "category": "other", "notes": "201301 · Uttar Pradesh"}, {"name": "B R KAPOOR & SONS PRIVATE LIMITED", "phone": "", "email": "", "city": "Delhi", "area": "", "pincode": "110006", "state": "Delhi", "category": "other", "notes": "110006 · Delhi"}, {"name": "BHAIRAV EMBRO DESIGN PRIVATE LIMITED", "phone": "+918700495456", "email": "", "city": "Delhi", "area": "Okhla Industrial Area Phase-1", "pincode": "110020", "state": "Delhi", "category": "embroidery", "notes": "Okhla Industrial Area Phase-1 · 110020 · Delhi"}, {"name": "BINOD KUMAR CHOUDHARY", "phone": "+919830142090", "email": "", "city": "Kolkata", "area": "", "pincode": "700007", "state": "West Bengal", "category": "other", "notes": "700007 · West Bengal"}, {"name": "CELEBRATION CLOTHING PRIVATE LIMITED", "phone": "+919820162480", "email": "", "city": "Mumbai", "area": "Dadar West", "pincode": "400028", "state": "Maharashtra", "category": "other", "notes": "Dadar West · 400028 · Maharashtra"}, {"name": "CHITRAKAR APPARELS PRIVATE LIMITED", "phone": "", "email": "", "city": "Kolkata", "area": "Park Street", "pincode": "700016", "state": "West Bengal", "category": "other", "notes": "Park Street · 700016 · West Bengal"}, {"name": "DEAVYA FASHION DIVAS", "phone": "", "email": "", "city": "Delhi", "area": "Kamla Nagar", "pincode": "110007", "state": "Delhi", "category": "other", "notes": "Kamla Nagar · 110007 · Delhi"}, {"name": "DIYA CREATIONS", "phone": "+918851869989", "email": "", "city": "Delhi", "area": "Mansarover Garden, Kirti Nagar", "pincode": "110015", "state": "Delhi", "category": "other", "notes": "Mansarover Garden, Kirti Nagar · 110015 · Delhi"}, {"name": "DORI DESIGN STUDIO", "phone": "+919326464734", "email": "", "city": "Mumbai", "area": "", "pincode": "400028", "state": "Maharashtra", "category": "other", "notes": "400028 · Maharashtra"}, {"name": "FASHION BLOOMS", "phone": "+918777084802", "email": "", "city": "Kolkata", "area": "", "pincode": "700053", "state": "West Bengal", "category": "other", "notes": "700053 · West Bengal"}, {"name": "FLAUNT", "phone": "", "email": "", "city": "Kolkata", "area": "Salt Lake City", "pincode": "700064", "state": "West Bengal", "category": "other", "notes": "Salt Lake City · 700064 · West Bengal"}, {"name": "GEON ATTIRE", "phone": "+919831874988", "email": "", "city": "Kolkata", "area": "", "pincode": "700007", "state": "West Bengal", "category": "other", "notes": "700007 · West Bengal"}, {"name": "HARYALI DESIGNER HUB", "phone": "+919831350720", "email": "", "city": "Kolkata", "area": "", "pincode": "700016", "state": "West Bengal", "category": "other", "notes": "700016 · West Bengal"}, {"name": "HOUSE OF RITAS PRIVATE LIMITED", "phone": "", "email": "", "city": "Delhi", "area": "", "pincode": "110028", "state": "Delhi", "category": "other", "notes": "110028 · Delhi"}, {"name": "INIZIO TRENDZ(SAANSH)", "phone": "", "email": "", "city": "", "area": "", "pincode": "", "state": "West Bengal", "category": "other", "notes": "West Bengal"}, {"name": "ISHUM DESIGNS", "phone": "+919818299443", "email": "", "city": "Noida", "area": "", "pincode": "201301", "state": "Uttar Pradesh", "category": "other", "notes": "201301 · Uttar Pradesh"}, {"name": "KALIGHATA R N FASHION", "phone": "+918981205009", "email": "", "city": "Kolkata", "area": "", "pincode": "700084", "state": "West Bengal", "category": "other", "notes": "700084 · West Bengal"}, {"name": "KAMAKSHI", "phone": "+919920078295", "email": "", "city": "Mumbai", "area": "KAMAKSHI DESING STUDIO,10 BHOOMI PLAZA, MASJID GALLI, CEOSS BHAVANI SHANKAR ROAD, DADAR(W) MUMBAI-40", "pincode": "400028", "state": "Maharashtra", "category": "other", "notes": "KAMAKSHI DESING STUDIO,10 BHOOMI PLAZA, MASJID GALLI, CEOSS BHAVANI SHANKAR ROAD, DADAR(W) MUMBAI-40 · 400028 · Maharashtra"}, {"name": "KANYA", "phone": "+91114150037", "email": "", "city": "Delhi", "area": "", "pincode": "110005", "state": "Delhi", "category": "other", "notes": "110005 · Delhi · Delhi landline"}, {"name": "KASAPA CREATION", "phone": "+919810230747", "email": "", "city": "Delhi", "area": "Tagore Garden , New Delhi", "pincode": "110027", "state": "Delhi", "category": "other", "notes": "Tagore Garden , New Delhi · 110027 · Delhi"}, {"name": "KIRTI CREATION", "phone": "", "email": "", "city": "Delhi", "area": "", "pincode": "110028", "state": "Delhi", "category": "other", "notes": "110028 · Delhi"}, {"name": "M/s ORCHID", "phone": "+918178127853", "email": "", "city": "Delhi", "area": "", "pincode": "110028", "state": "Delhi", "category": "other", "notes": "110028 · Delhi"}, {"name": "MAIDENS CREATION", "phone": "+917021136150", "email": "", "city": "Mumbai", "area": "Dadar West", "pincode": "400028", "state": "Maharashtra", "category": "other", "notes": "Dadar West · 400028 · Maharashtra"}, {"name": "NARITVA", "phone": "+919662057022", "email": "naritva68@gmail.com", "city": "Kolkata", "area": "", "pincode": "700017", "state": "West Bengal", "category": "other", "notes": "700017 · West Bengal"}, {"name": "NEHA COUTURE", "phone": "+919930022113", "email": "", "city": "Mumbai", "area": "M J Marjket", "pincode": "400002", "state": "Maharashtra", "category": "other", "notes": "M J Marjket · 400002 · Maharashtra"}, {"name": "NIKHAAR FASHIONS HERITAGE", "phone": "+919529345345", "email": "", "city": "Jaipur", "area": "Trimurti Circle", "pincode": "302004", "state": "Rajasthan", "category": "other", "notes": "Trimurti Circle · 302004 · Rajasthan"}, {"name": "NILESH CREATIONS", "phone": "+91114019080", "email": "", "city": "Delhi", "area": "", "pincode": "110015", "state": "Delhi", "category": "other", "notes": "110015 · Delhi · Delhi landline"}, {"name": "NILIMA CREATIONS", "phone": "+918910046625", "email": "", "city": "Kolkata", "area": "", "pincode": "700016", "state": "West Bengal", "category": "other", "notes": "700016 · West Bengal"}, {"name": "NITYA) SARBANI SAREES PVT LTD kolkata", "phone": "+919874183445", "email": "", "city": "Kolkata", "area": "Park Street", "pincode": "700016", "state": "West Bengal", "category": "other", "notes": "Park Street · 700016 · West Bengal"}, {"name": "ONAYA FASHIONS PRIVATE LIMITED", "phone": "+916292240588", "email": "", "city": "Kolkata", "area": "", "pincode": "700016", "state": "West Bengal", "category": "other", "notes": "700016 · West Bengal"}, {"name": "PRASHVVITA FASHION PRIVATE LIMITED", "phone": "", "email": "", "city": "Mumbai", "area": "", "pincode": "400086", "state": "Maharashtra", "category": "other", "notes": "400086 · Maharashtra"}, {"name": "QUEEN'S CREATION", "phone": "", "email": "", "city": "Kolkata", "area": "", "pincode": "700016", "state": "West Bengal", "category": "other", "notes": "700016 · West Bengal"}, {"name": "R.F. DESIGHERS", "phone": "+919829373990", "email": "", "city": "Jaipur", "area": "M.i Road Jaipur", "pincode": "302003", "state": "Rajasthan", "category": "other", "notes": "M.i Road Jaipur · 302003 · Rajasthan"}, {"name": "R.F.COUTURE", "phone": "", "email": "", "city": "Jaipur", "area": "", "pincode": "302001", "state": "Rajasthan", "category": "other", "notes": "302001 · Rajasthan · dummy number 1234567899 in old software — get the real one"}, {"name": "RADHA TRADITIONS", "phone": "", "email": "", "city": "Mumbai", "area": "Dadar West", "pincode": "400028", "state": "Maharashtra", "category": "other", "notes": "Dadar West · 400028 · Maharashtra"}, {"name": "RARO HOUSE OF FASHION PRIVATE LIMITED", "phone": "+919999016771", "email": "", "city": "Delhi", "area": "Pvr", "pincode": "110028", "state": "Delhi", "category": "other", "notes": "Pvr · 110028 · Delhi"}, {"name": "RASIYA", "phone": "+919811400262", "email": "", "city": "Delhi", "area": "Phase-1", "pincode": "110028", "state": "Delhi", "category": "other", "notes": "Phase-1 · 110028 · Delhi"}, {"name": "RITIKA & RASHIKA ENTERPRISE", "phone": "", "email": "", "city": "Kolkata", "area": "", "pincode": "700016", "state": "West Bengal", "category": "other", "notes": "700016 · West Bengal"}, {"name": "RITRAS FASHION DESIGNER STUDIO", "phone": "+919831787026", "email": "", "city": "Kolkata", "area": "", "pincode": "700016", "state": "West Bengal", "category": "other", "notes": "700016 · West Bengal"}, {"name": "ROOP RANG FASHION PRIVATE LIMITED", "phone": "+919831007971", "email": "", "city": "Kolkata", "area": "Park Street", "pincode": "700016", "state": "West Bengal", "category": "other", "notes": "Park Street · 700016 · West Bengal"}, {"name": "ROSHANS SAREE PALACE PRIVATE LIMITED", "phone": "", "email": "", "city": "Delhi", "area": "", "pincode": "110005", "state": "Delhi", "category": "other", "notes": "110005 · Delhi"}, {"name": "SAHELI FASHIONS PRIVATE LIMITED", "phone": "", "email": "", "city": "Mumbai", "area": "Dadar West", "pincode": "400028", "state": "Maharashtra", "category": "other", "notes": "Dadar West · 400028 · Maharashtra"}, {"name": "SHUBHANDAM", "phone": "", "email": "", "city": "Jaipur", "area": "", "pincode": "302003", "state": "Rajasthan", "category": "other", "notes": "302003 · Rajasthan · dummy number 1234567890 in old software — get the real one"}, {"name": "SONA AGRAWAL", "phone": "+919831627654", "email": "", "city": "Kolkata", "area": "", "pincode": "700038", "state": "West Bengal", "category": "other", "notes": "700038 · West Bengal"}, {"name": "STUDIO AMAS", "phone": "+918700496602", "email": "", "city": "Delhi", "area": "Okhla Industrial Area", "pincode": "110020", "state": "Delhi", "category": "other", "notes": "Okhla Industrial Area · 110020 · Delhi"}, {"name": "SUMAN SELECTION", "phone": "+919874045670", "email": "", "city": "Kolkata", "area": "", "pincode": "700016", "state": "West Bengal", "category": "other", "notes": "700016 · West Bengal"}, {"name": "SUMAN'S LABEL", "phone": "", "email": "", "city": "Kolkata", "area": "", "pincode": "700020", "state": "West Bengal", "category": "other", "notes": "700020 · West Bengal"}, {"name": "TANKHI DESIGNS1 PRIVATE LTD", "phone": "+918369452674", "email": "", "city": "Mumbai", "area": "Goregaon East", "pincode": "400063", "state": "Maharashtra", "category": "other", "notes": "Goregaon East · 400063 · Maharashtra"}, {"name": "TANSHI FASHIONS PRIVATE LIMITED", "phone": "", "email": "", "city": "Kolkata", "area": "Park Street", "pincode": "700016", "state": "West Bengal", "category": "other", "notes": "Park Street · 700016 · West Bengal"}, {"name": "THAKUR EXCLUSIVE", "phone": "", "email": "", "city": "Delhi", "area": "", "pincode": "", "state": "Delhi", "category": "other", "notes": "Delhi"}, {"name": "THE MERAKI STUDIO", "phone": "+917891099995", "email": "", "city": "Mumbai", "area": "", "pincode": "400028", "state": "Maharashtra", "category": "other", "notes": "400028 · Maharashtra"}, {"name": "UK CREATION", "phone": "", "email": "", "city": "", "area": "", "pincode": "", "state": "West Bengal", "category": "other", "notes": "West Bengal"}, {"name": "USHA BAGRI", "phone": "", "email": "", "city": "", "area": "", "pincode": "", "state": "West Bengal", "category": "other", "notes": "West Bengal"}, {"name": "VALRAH FASHION HOUSE", "phone": "+919619611187", "email": "", "city": "Mumbai", "area": "", "pincode": "400028", "state": "Maharashtra", "category": "other", "notes": "400028 · Maharashtra"}, {"name": "VANNIKAA MALIK", "phone": "", "email": "", "city": "Delhi", "area": "", "pincode": "110028", "state": "Delhi", "category": "other", "notes": "110028 · Delhi"}];
+const rowsEl = document.getElementById('rows');
+const countEl = document.getElementById('count');
+const q = document.getElementById('q');
+let city = '';
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]); }
+function render() {
+  const term = q.value.trim().toLowerCase();
+  const list = DATA.filter(v => (!city || (v.city || 'Unknown') === city) &&
+    (!term || [v.name, v.area, v.pincode, v.city, v.phone, v.email].join(' ').toLowerCase().includes(term)));
+  countEl.textContent = list.length === DATA.length ? `All ${DATA.length} vendors` : `${list.length} of ${DATA.length} vendors`;
+  rowsEl.innerHTML = list.map(v => {
+    const note = /dummy number/.test(v.notes) ? '<span class="flag">Get real number</span>'
+               : /landline/.test(v.notes) ? '<span class="cat">Landline</span>'
+               : v.category === 'embroidery' ? '<span class="cat">Embroidery</span>' : '';
+    const phone = v.phone ? `<a href="tel:${esc(v.phone)}">${esc(v.phone)}</a>` : '<span class="none">—</span>';
+    const where = [v.area, v.pincode].filter(Boolean).join(' · ') || '<span class="none">—</span>';
+    return `<tr><td class="name">${esc(v.name)}${v.email ? `<br><span class="cat">${esc(v.email)}</span>` : ''}</td><td class="num">${phone}</td><td>${esc(v.city || '')}${v.city ? '' : '<span class="none">—</span>'}</td><td>${where}</td><td>${note}</td></tr>`;
+  }).join('');
+}
+q.addEventListener('input', render);
+document.getElementById('chips').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  city = b.dataset.city;
+  document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c === b)));
+  render();
+});
+document.getElementById('copy').addEventListener('click', async () => {
+  const btn = document.getElementById('copy');
+  try { await navigator.clipboard.writeText(document.getElementById('sql').textContent); btn.textContent = 'Copied'; }
+  catch { btn.textContent = 'Select and copy manually'; }
+  setTimeout(() => btn.textContent = 'Copy SQL', 2000);
+});
+render();
+</script>

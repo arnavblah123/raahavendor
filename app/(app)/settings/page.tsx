@@ -3,6 +3,8 @@ import { getProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { getSettings } from '@/lib/queries'
 import { SettingsForm } from '@/components/settings/settings-form'
+import { VendorImport } from '@/components/settings/vendor-import'
+import { countPendingSeedVendors } from '@/app/(app)/settings/actions'
 import { DEFAULT_WHATSAPP_TEMPLATE, CHECKPOINT_PROFILES } from '@/lib/constants'
 import type { Profile } from '@/lib/types'
 
@@ -15,10 +17,11 @@ export default async function SettingsPage() {
   if (!profile || profile.role !== 'admin') redirect('/')
 
   const supabase = await createClient()
-  const [settings, categoriesRes, profilesRes] = await Promise.all([
+  const [settings, categoriesRes, profilesRes, pendingVendors] = await Promise.all([
     getSettings(),
     supabase.from('vendor_categories').select('*').order('sort_order'),
     supabase.from('profiles').select('*').order('full_name'),
+    countPendingSeedVendors(),
   ])
 
   const fallbackProfiles = Object.fromEntries(
@@ -31,6 +34,8 @@ export default async function SettingsPage() {
         <h1 className="font-serif text-3xl leading-tight text-charcoal">Settings</h1>
         <p className="mt-0.5 text-[13px] text-muted">Only you can see this page.</p>
       </header>
+
+      <VendorImport pending={pendingVendors} />
 
       <SettingsForm
         currentUserId={profile.id}
