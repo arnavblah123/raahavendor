@@ -34,14 +34,16 @@ follow the steps in order.
    `supabase/migrations/0002_po_and_inward.sql`. This one adds photos and
    measurements on order items, purchase orders, inwarding, and the private
    storage bucket the photos live in.
+6. Once more with `supabase/migrations/0003_po_details.sql`, which adds the
+   space for your company details on the purchase order.
 
-You should see *Success. No rows returned* both times. That is correct — it
+You should see *Success. No rows returned* each time. That is correct — it
 has just built all the tables, security rules, indexes and the photo bucket.
 
 You only ever do this once, in that order.
 
 > **Already running the app before purchase orders existed?** Just run
-> `0002_po_and_inward.sql` on your existing project. Nothing you have entered
+> `0002_po_and_inward.sql` and `0003_po_details.sql` on your existing project. Nothing you have entered
 > is touched. New orders are numbered `RAAHA-ORD-…` from now on so they cannot
 > be confused with purchase order numbers; old orders keep their numbers.
 
@@ -244,7 +246,9 @@ is the *proof*. Each step checks the previous one.
    makes you say so before the order goes in. Photos are shrunk on the phone
    and kept in a private storage bucket only signed-in users can open.
 2. **Raise the PO** — one tap after placing the order (or any time later from
-   the order page). The number is generated automatically as
+   the order page). The PO is issued by **NB TEXTILE**; the address, phone,
+   GSTIN and default terms printed on it are yours to fill in once under
+   **Settings → Purchase order details**. The number is generated automatically as
    `PO/2026-27/0001` and restarts every financial year; it is generated inside
    the database, so two people raising POs at the same moment can never get the
    same number. The PO lists every piece with its photo and measurements,

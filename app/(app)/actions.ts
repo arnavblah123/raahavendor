@@ -17,6 +17,7 @@ import {
   type CheckpointProfile,
   type ContactMethod,
 } from '@/lib/constants'
+import { resolvePoDetails } from '@/lib/po'
 import {
   cleanMeasurements,
   isMeasurementUnit,
@@ -421,10 +422,14 @@ export async function createPurchaseOrder(
     await requireProfile()
     const supabase = await createClient()
 
+    // Terms come from Settings → Purchase order details unless given here.
+    const { data: settings } = await supabase.from('app_settings').select('*').limit(1).maybeSingle()
+    const defaults = resolvePoDetails((settings as { po_details?: unknown } | null)?.po_details)
+
     const { data, error } = await supabase.rpc('create_purchase_order', {
       p_order_id: input.orderId,
       p_po_date: input.poDate || todayIST(),
-      p_terms: input.terms?.trim() || null,
+      p_terms: input.terms?.trim() || defaults.default_terms || null,
       p_notes: input.notes?.trim() || null,
     })
     if (error) return fail(error.message)

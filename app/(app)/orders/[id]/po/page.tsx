@@ -1,14 +1,14 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
-import { getPurchaseOrderForOrder } from '@/lib/queries'
+import { getPurchaseOrderForOrder, getSettings } from '@/lib/queries'
 import { isAdmin } from '@/lib/auth'
 import { Badge } from '@/components/ui/badge'
 import { PoPrintActions } from '@/components/orders/po-print-actions'
 import { formatDate } from '@/lib/dates'
 import { formatMoney } from '@/lib/money'
 import { formatMeasurements, parseMeasurements } from '@/lib/measurements'
-import { PO_STATUS_LABELS, poWhatsappMessage } from '@/lib/po'
+import { PO_STATUS_LABELS, poWhatsappMessage, resolvePoDetails } from '@/lib/po'
 import { PRODUCT_CATEGORY_LABELS } from '@/lib/constants'
 import { whatsappUrl } from '@/lib/whatsapp'
 
@@ -22,7 +22,12 @@ export const metadata = { title: 'Purchase order — Raaha' }
  */
 export default async function PurchaseOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [data, admin] = await Promise.all([getPurchaseOrderForOrder(id), isAdmin()])
+  const [data, admin, settings] = await Promise.all([
+    getPurchaseOrderForOrder(id),
+    isAdmin(),
+    getSettings(),
+  ])
+  const from = resolvePoDetails(settings?.po_details)
 
   // No PO yet: back to the order, where it can be raised.
   if (!data) redirect(`/orders/${id}`)
@@ -52,6 +57,7 @@ export default async function PurchaseOrderPage({ params }: { params: Promise<{ 
       poDate: po.po_date,
       expectedDate: po.expected_delivery_date,
       lines,
+      from,
     }),
   )
 
@@ -75,9 +81,18 @@ export default async function PurchaseOrderPage({ params }: { params: Promise<{ 
       {/* ---- The document ---- */}
       <article className="po-document rounded-lg border border-line bg-white p-5 text-charcoal sm:p-8">
         <header className="flex flex-wrap items-start justify-between gap-4 border-b border-charcoal pb-4">
-          <div>
-            <p className="font-serif text-2xl leading-none">Raaha</p>
-            <p className="font-serif text-sm italic text-gold">by Archana Bansal</p>
+          <div className="min-w-0">
+            <p className="font-serif text-2xl leading-none">{from.company_name}</p>
+            {from.tagline && <p className="font-serif text-sm italic text-gold">{from.tagline}</p>}
+            {(from.address || from.phone || from.email || from.gstin) && (
+              <div className="mt-2 text-[12px] leading-relaxed text-ink">
+                {from.address && <p className="whitespace-pre-line">{from.address}</p>}
+                {(from.phone || from.email) && (
+                  <p>{[from.phone, from.email].filter(Boolean).join(' · ')}</p>
+                )}
+                {from.gstin && <p>GSTIN {from.gstin}</p>}
+              </div>
+            )}
           </div>
           <div className="text-right">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
@@ -224,7 +239,8 @@ export default async function PurchaseOrderPage({ params }: { params: Promise<{ 
           </p>
           <div className="text-right">
             <div className="mb-1 h-10 w-40 border-b border-charcoal" />
-            <p>For Raaha by Archana Bansal</p>
+            <p>For {from.company_name}</p>
+            {from.signatory && <p>{from.signatory}</p>}
           </div>
         </div>
       </article>

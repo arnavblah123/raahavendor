@@ -168,6 +168,16 @@ if (poCode === '42P01' || /relation .* does not exist|Could not find the table/i
   ok('Purchase orders and inwarding are set up')
 }
 
+// --- 5b. Did migration 0003 run? ---------------------------------------------
+const pod = await get('/rest/v1/app_settings?select=po_details&limit=1')
+if (pod.json?.code === '42703' || /po_details/.test(pod.json?.message || '')) {
+  bad('Migration 0003 has not been run',
+      'Paste supabase/migrations/0003_po_details.sql into the Supabase SQL Editor and press Run.\n      It adds your company details to the purchase order.')
+  failed = true
+} else if (pod.json?.code !== '42P01') {
+  ok('Purchase order company details are set up')
+}
+
 // --- 6. Reference data seeded? ---------------------------------------------
 const settings = await get('/rest/v1/app_settings?select=id&limit=1')
 if (settings.json?.code === '42P01') {

@@ -10,7 +10,7 @@ import type {
 } from './constants'
 import type { DateStr } from './dates'
 import type { Measurement, MeasurementCheck, MeasurementUnit } from './measurements'
-import type { PoStatus } from './po'
+import type { PoDetails, PoStatus } from './po'
 
 export interface Profile {
   id: string
@@ -256,6 +256,8 @@ export interface AppSettings {
   whatsapp_template: string
   whatsapp_template_overdue: string
   checkpoint_profiles: Record<string, number[]>
+  /** Absent until migration 0003 has been run. */
+  po_details?: Partial<PoDetails> | null
   updated_at: string
 }
 

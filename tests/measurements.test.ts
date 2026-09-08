@@ -11,7 +11,7 @@ import {
   parseMeasurementChecks,
   parseMeasurements,
 } from '../lib/measurements'
-import { financialYear, formatPoNo, poWhatsappMessage } from '../lib/po'
+import { financialYear, formatPoNo, poWhatsappMessage, resolvePoDetails } from '../lib/po'
 
 const ordered = [
   { name: 'Bust', value: 36 },
@@ -141,5 +141,29 @@ describe('purchase order numbering', () => {
     expect(msg).toContain('• 2 pcs Bridal Lehenga (BL-101)')
     expect(msg).toContain('• 1 set Anarkali\n')
     expect(msg).toContain('23 Oct 2026')
+    expect(msg).toContain('this is NB TEXTILE (Raaha by Archana Bansal).')
+    expect(msg.trimEnd().endsWith('— NB TEXTILE')).toBe(true)
+  })
+
+  it('signs the message with whatever company is set in Settings', () => {
+    const msg = poWhatsappMessage({
+      vendorName: 'Shyam Fabrics',
+      poNo: 'PO/2026-27/0004',
+      poDate: '2026-09-08',
+      expectedDate: '2026-10-23',
+      lines: [],
+      from: { company_name: 'Acme Textiles', tagline: '' },
+    })
+    expect(msg).toContain('this is Acme Textiles.')
+    expect(msg.trimEnd().endsWith('— Acme Textiles')).toBe(true)
+  })
+
+  it('resolves company details over the defaults and tolerates a missing column', () => {
+    expect(resolvePoDetails(undefined).company_name).toBe('NB TEXTILE')
+    expect(resolvePoDetails(null).signatory).toBe('Authorised signatory')
+    const r = resolvePoDetails({ company_name: '  NB Textile Pvt Ltd ', gstin: '19ABCDE1234F1Z5', tagline: '   ' })
+    expect(r.company_name).toBe('NB Textile Pvt Ltd')
+    expect(r.gstin).toBe('19ABCDE1234F1Z5')
+    expect(r.tagline).toBe('Raaha by Archana Bansal')
   })
 })
