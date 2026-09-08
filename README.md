@@ -30,11 +30,20 @@ follow the steps in order.
 3. Open the file `supabase/migrations/0001_init.sql` from this project, copy
    **everything** in it, and paste it into the editor.
 4. Click **Run**.
+5. Click **New query** again and do the same with
+   `supabase/migrations/0002_po_and_inward.sql`. This one adds photos and
+   measurements on order items, purchase orders, inwarding, and the private
+   storage bucket the photos live in.
 
-You should see *Success. No rows returned*. That is correct — it has just built
-all the tables, security rules and indexes.
+You should see *Success. No rows returned* both times. That is correct — it
+has just built all the tables, security rules, indexes and the photo bucket.
 
-You only ever do this once.
+You only ever do this once, in that order.
+
+> **Already running the app before purchase orders existed?** Just run
+> `0002_po_and_inward.sql` on your existing project. Nothing you have entered
+> is touched. New orders are numbered `RAAHA-ORD-…` from now on so they cannot
+> be confused with purchase order numbers; old orders keep their numbers.
 
 ### Step 3 — Create your login
 
@@ -170,10 +179,15 @@ straight away, where you can promote or disable them.
 | | Admin (you) | Staff |
 |---|---|---|
 | Place orders, log follow-ups, record dispatch | ✅ | ✅ |
+| Add photos and measurements to an order | ✅ | ✅ |
+| Raise a purchase order, print it, send it | ✅ | ✅ |
+| Inward goods against a PO and flag problems | ✅ | ✅ |
+| Type in the invoice price at inward | ✅ | ✅ writes it, never reads it back |
+| Resolve a flagged piece | ✅ | ❌ |
 | Add and edit vendors | ✅ | ✅ |
-| See order amounts, advances, payment terms | ✅ | ❌ never sent to their device |
+| See order amounts, advances, payment terms, PO rates | ✅ | ❌ never sent to their device |
 | Change the original promised date | ✅ | ❌ |
-| Delete anything | ✅ | ❌ |
+| Cancel a purchase order, delete anything | ✅ | ❌ |
 | Settings page | ✅ | ❌ |
 
 Staff genuinely cannot see money — the amounts are kept in separate tables that
@@ -212,6 +226,42 @@ You can change the percentages, or add your own schedule, in **Settings**.
 
 ---
 
+## Photos, measurements, purchase orders and inwarding
+
+The order is the *promise*; the purchase order is the *document*; the inward
+is the *proof*. Each step checks the previous one.
+
+1. **Placing the order** — for every piece the form asks for a **photo** of
+   what is being ordered and, if the vendor is making it to size, the
+   **measurements**. Neither is compulsory, but if either is missing the app
+   makes you say so before the order goes in. Photos are shrunk on the phone
+   and kept in a private storage bucket only signed-in users can open.
+2. **Raise the PO** — one tap after placing the order (or any time later from
+   the order page). The number is generated automatically as
+   `PO/2026-27/0001` and restarts every financial year; it is generated inside
+   the database, so two people raising POs at the same moment can never get the
+   same number. The PO lists every piece with its photo and measurements,
+   prints on A4, saves as PDF from the print dialog, and can be sent on
+   WhatsApp. Rates appear on it only when an admin raises it.
+3. **Inward the goods** — when the parcel arrives, open the order and tap
+   **Inward goods**. For every line you enter how many came and the price on
+   the vendor's invoice. If the order carried measurements you measure the
+   piece again and type what you get; the app shows the difference next to
+   each. **Any difference at all switches the flag on** and asks you to write
+   down what is wrong. You can also flag a piece by hand for anything else —
+   damage, wrong colour, wrong fabric.
+4. **The owner decides** — flagged pieces appear on the dashboard and on the
+   **Inwards** page until an admin marks them as seen, with a note on what was
+   decided. Staff see the note on the order afterwards.
+
+Inwarding keeps the rest of the app honest: pieces that arrived were
+necessarily sent, so if the dispatch was never logged the app records it for
+you, and when the last piece is in the order moves to **Received** on its own.
+A partial inward asks for the vendor's promised date for the balance, exactly
+as a partial dispatch does.
+
+---
+
 ## Everyday use
 
 See **[HOW-TO-USE.md](./HOW-TO-USE.md)** — written in plain language for staff.
@@ -238,18 +288,26 @@ separate backend.
 app/(app)/          the signed-in screens
   page.tsx            morning dashboard
   orders/             list, place order, order detail
+    [id]/po/          the printable purchase order
+    [id]/inward/      goods receipt against the PO
+  inwards/            flagged pieces for the owner, and the receiving log
   vendors/            list, add, scorecard
   reports/  settings/
   actions.ts          every write in the app
 lib/
   followups.ts        the scheduling ladder — pure, no database, fully tested
   scorecard.ts        vendor grading and fill rate — also pure
+  measurements.ts     ordered-vs-measured comparison and flagging — pure, tested
+  po.ts               financial-year PO numbering and the PO WhatsApp text
+  images.ts           shrinks a phone photo before upload
   dates.ts            calendar dates in IST (never the server's timezone)
   money.ts            ₹ in the Indian lakh/crore system
   whatsapp.ts         message templates and wa.me links
   queries.ts          server-side reads
 supabase/migrations/  the schema, security rules and database functions
-tests/                44 unit tests covering the scheduling rules
+  0001_init.sql         orders, follow-ups, dispatches
+  0002_po_and_inward.sql photos, measurements, purchase orders, inwarding
+tests/                unit tests for scheduling, money, measurements and PO numbering
 ```
 
 ### Things worth knowing before you change anything
@@ -267,8 +325,21 @@ tests/                44 unit tests covering the scheduling rules
   every logged-in user is the same database role — so hiding money from staff
   requires separate tables with their own policy. Do not move those columns back
   into the main tables.
-- **Dispatch, revision and order creation each run inside one database
-  function**, so a half-applied dispatch cannot corrupt the piece counts.
+- **Dispatch, revision, order creation, PO creation and inwarding each run
+  inside one database function**, so a half-applied dispatch or inward cannot
+  corrupt the piece counts.
+- **Photos never touch the Next.js server.** The browser shrinks the image and
+  uploads it straight to the private `order-photos` bucket with the user's own
+  session; pages render short-lived signed links. Nothing is public.
+- **Invoice prices at inward are write-only for staff.** The
+  `inward_item_finance` table lets a member insert but only an admin select, so
+  the person holding the invoice can type it in without the app ever showing
+  them a price. `purchase_order_finance` follows the same admin-only rule as
+  `order_finance`.
+- **`qty_received` is not `qty_dispatched`.** Dispatched is what the vendor
+  sent; received is what has been inwarded at the shop. `record_inward()`
+  keeps the two consistent by logging a dispatch for anything that arrived
+  without one.
 
 ### If you want the daily email digest later
 

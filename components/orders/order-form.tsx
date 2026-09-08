@@ -2,12 +2,14 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Plus, Trash2, CalendarClock } from 'lucide-react'
+import { Camera, CalendarClock, Loader2, Plus, Ruler, Trash2, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldGroup, Input, Select, Textarea } from '@/components/ui/field'
 import { ErrorNote } from '@/components/common/states'
 import { Modal } from '@/components/ui/modal'
 import { VendorForm } from '@/components/vendors/vendor-form'
+import { PhotoField } from '@/components/orders/photo-field'
+import { MeasurementsEditor, type MeasurementRow } from '@/components/orders/measurements-editor'
 import { createOrder, type NewOrderItemInput } from '@/app/(app)/actions'
 import {
   CHECKPOINT_PROFILES,
@@ -16,14 +18,21 @@ import {
   PRODUCT_CATEGORY_LABELS,
   UNITS,
   type CheckpointProfile,
+  type ProductCategory,
 } from '@/lib/constants'
 import { formatDate, todayIST } from '@/lib/dates'
 import { generateLadder, expectedDispatchDate } from '@/lib/followups'
+import { cleanMeasurements, type MeasurementUnit } from '@/lib/measurements'
 import { formatMoney, parseMoney } from '@/lib/money'
 import type { Vendor } from '@/lib/types'
 
-interface ItemRow extends NewOrderItemInput {
+interface ItemRow extends Omit<NewOrderItemInput, 'measurements' | 'measurement_unit' | 'photo_path'> {
   key: string
+  /** "This piece is made to measurements" — shows the editor. */
+  needsMeasurements: boolean
+  measurementRows: MeasurementRow[]
+  measurementUnit: MeasurementUnit
+  photoPath: string | null
 }
 
 function blankItem(): ItemRow {
@@ -37,6 +46,10 @@ function blankItem(): ItemRow {
     quantity: 1,
     unit: 'pcs',
     rate: null,
+    needsMeasurements: false,
+    measurementRows: [],
+    measurementUnit: 'in',
+    photoPath: null,
   }
 }
 
@@ -56,6 +69,7 @@ export function OrderForm({
   const [error, setError] = useState<string | null>(null)
   const [newVendorOpen, setNewVendorOpen] = useState(false)
   const [vendorList, setVendorList] = useState(vendors)
+  const [checkOpen, setCheckOpen] = useState(false)
 
   const today = todayIST()
 
@@ -101,13 +115,43 @@ export function OrderForm({
     setItems((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)))
   }
 
+  /** What is missing before the order goes in — shown as a reminder, not a block. */
+  const gaps = useMemo(() => {
+    const missingPhoto: string[] = []
+    const noMeasurements: string[] = []
+    const emptyMeasurements: string[] = []
+    items.forEach((i, idx) => {
+      const label = `Item ${idx + 1}${i.product_name.trim() ? ` — ${i.product_name.trim()}` : ''}`
+      if (!i.photoPath) missingPhoto.push(label)
+      if (!i.needsMeasurements) noMeasurements.push(label)
+      else if (cleanMeasurements(i.measurementRows).length === 0) emptyMeasurements.push(label)
+    })
+    return { missingPhoto, noMeasurements, emptyMeasurements }
+  }, [items])
+
+  function validate(): string | null {
+    if (!vendorId) return 'Please choose a vendor.'
+    if (items.some((i) => !i.product_name.trim())) return 'Every item needs a product name.'
+    return null
+  }
+
   function submit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    const problem = validate()
+    if (problem) return setError(problem)
 
-    if (!vendorId) return setError('Please choose a vendor.')
-    if (items.some((i) => !i.product_name.trim())) return setError('Every item needs a product name.')
+    // Missing photo or measurements are not errors — but the person placing
+    // the order must consciously decide to go ahead without them.
+    if (gaps.missingPhoto.length > 0 || gaps.noMeasurements.length > 0 || gaps.emptyMeasurements.length > 0) {
+      setCheckOpen(true)
+      return
+    }
+    place()
+  }
 
+  function place() {
+    setCheckOpen(false)
     start(async () => {
       const res = await createOrder({
         vendor_id: vendorId,
@@ -121,19 +165,25 @@ export function OrderForm({
         total_amount: isAdmin ? (parseMoney(totalAmount) ?? (itemsTotal || null)) : null,
         advance_paid: isAdmin ? parseMoney(advance) : null,
         payment_notes: isAdmin ? paymentNotes : '',
-        items: items.map(({ key: _key, ...i }) => ({
-          ...i,
-          quantity: Number(i.quantity) || 1,
-          rate: isAdmin ? (Number(i.rate) || null) : null,
-          amount: isAdmin ? (Number(i.quantity) || 0) * (Number(i.rate) || 0) || null : null,
-        })),
+        items: items.map(
+          ({ key: _key, needsMeasurements, measurementRows, measurementUnit, photoPath, ...i }) => ({
+            ...i,
+            quantity: Number(i.quantity) || 1,
+            rate: isAdmin ? (Number(i.rate) || null) : null,
+            amount: isAdmin ? (Number(i.quantity) || 0) * (Number(i.rate) || 0) || null : null,
+            measurements: needsMeasurements ? cleanMeasurements(measurementRows) : [],
+            measurement_unit: measurementUnit,
+            photo_path: photoPath,
+          }),
+        ),
       })
 
       if (!res.ok) {
         setError(res.error)
         return
       }
-      router.push(`/orders/${res.id}`)
+      // Land on the order with the "raise a purchase order?" prompt showing.
+      router.push(`/orders/${res.id}?placed=1`)
       router.refresh()
     })
   }
@@ -246,6 +296,23 @@ export function OrderForm({
           title="Items"
           description="Finished garments — count in pieces or sets, never metres."
         >
+          <div className="rounded-md border border-gold/25 bg-gold-wash/50 p-3 text-[13px] leading-relaxed text-ink">
+            <p className="flex items-center gap-1.5 font-semibold text-gold">
+              <Camera className="size-4" />
+              For every piece, before you place the order
+            </p>
+            <ul className="mt-1.5 list-disc space-y-1 pl-5">
+              <li>
+                <strong>Add a photo</strong> of the piece being ordered — the design, the sample or
+                the reference picture.
+              </li>
+              <li>
+                <strong>Enter the measurements</strong> if the vendor is making it to size. They go
+                on the purchase order, and the piece is checked against them when it arrives.
+              </li>
+            </ul>
+          </div>
+
           <div className="space-y-3">
             {items.map((item, idx) => (
               <div key={item.key} className="rounded-md border border-line bg-parchment/40 p-3">
@@ -351,6 +418,39 @@ export function OrderForm({
                       </Field>
                     </div>
                   )}
+
+                  <PhotoField
+                    value={item.photoPath}
+                    onChange={(path) => updateItem(item.key, { photoPath: path })}
+                  />
+
+                  <div className="space-y-2">
+                    <label className="flex min-h-11 cursor-pointer items-center gap-2.5 text-[14px] text-charcoal">
+                      <input
+                        type="checkbox"
+                        checked={item.needsMeasurements}
+                        onChange={(e) => updateItem(item.key, { needsMeasurements: e.target.checked })}
+                        className="size-5 accent-gold"
+                      />
+                      <span className="flex items-center gap-1.5">
+                        <Ruler className="size-4 text-muted" />
+                        This piece is made to measurements
+                      </span>
+                    </label>
+                    {item.needsMeasurements ? (
+                      <MeasurementsEditor
+                        category={(item.category ?? 'other') as ProductCategory}
+                        rows={item.measurementRows}
+                        unit={item.measurementUnit}
+                        onRowsChange={(rows) => updateItem(item.key, { measurementRows: rows })}
+                        onUnitChange={(unit) => updateItem(item.key, { measurementUnit: unit })}
+                      />
+                    ) : (
+                      <p className="text-[12px] text-muted">
+                        Standard size — no measurements to check on arrival.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -410,7 +510,56 @@ export function OrderForm({
           {pending && <Loader2 className="animate-spin" />}
           {pending ? 'Placing order…' : 'Place order'}
         </Button>
+        <p className="text-center text-[12px] text-muted">
+          After placing it you can raise a purchase order for the vendor in one tap.
+        </p>
       </form>
+
+      <Modal
+        open={checkOpen}
+        onOpenChange={setCheckOpen}
+        title="Before you place this order"
+        description="Nothing is blocking you — just make sure this is deliberate."
+        footer={
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setCheckOpen(false)}>
+              Go back and add
+            </Button>
+            <Button variant="gold" className="flex-1" onClick={place} disabled={pending}>
+              {pending && <Loader2 className="animate-spin" />}
+              Place order anyway
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          {gaps.missingPhoto.length > 0 && (
+            <GapList
+              icon={<Camera className="size-4" />}
+              title="No photo"
+              note="Without a photo there is nothing to check the goods against when they arrive."
+              rows={gaps.missingPhoto}
+            />
+          )}
+          {gaps.emptyMeasurements.length > 0 && (
+            <GapList
+              icon={<TriangleAlert className="size-4" />}
+              title="Measurements ticked but none entered"
+              note="Either enter them or untick the box."
+              rows={gaps.emptyMeasurements}
+              tone="overdue"
+            />
+          )}
+          {gaps.noMeasurements.length > 0 && (
+            <GapList
+              icon={<Ruler className="size-4" />}
+              title="No measurements"
+              note="Fine for a standard size. If the vendor is making it to size, add them so the piece can be checked on arrival."
+              rows={gaps.noMeasurements}
+            />
+          )}
+        </div>
+      </Modal>
 
       <Modal
         open={newVendorOpen}
@@ -433,6 +582,37 @@ export function OrderForm({
         />
       </Modal>
     </>
+  )
+}
+
+function GapList({
+  icon,
+  title,
+  note,
+  rows,
+  tone = 'today',
+}: {
+  icon: React.ReactNode
+  title: string
+  note: string
+  rows: string[]
+  tone?: 'today' | 'overdue'
+}) {
+  const colour = tone === 'overdue' ? 'text-overdue' : 'text-today'
+  const box = tone === 'overdue' ? 'border-overdue/30 bg-overdue-wash' : 'border-today/30 bg-today-wash'
+  return (
+    <div className={`rounded-md border p-3 ${box}`}>
+      <p className={`flex items-center gap-1.5 text-[13px] font-semibold ${colour}`}>
+        {icon}
+        {title}
+      </p>
+      <ul className="mt-1.5 space-y-0.5 text-[13px] text-charcoal">
+        {rows.map((r) => (
+          <li key={r}>{r}</li>
+        ))}
+      </ul>
+      <p className="mt-1.5 text-[12px] leading-relaxed text-ink">{note}</p>
+    </div>
   )
 }
 

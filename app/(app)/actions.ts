@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { getProfile, requireProfile } from '@/lib/auth'
+import { getProfile, requireAdmin, requireProfile } from '@/lib/auth'
 import { todayIST, addDaysStr, type DateStr } from '@/lib/dates'
 import {
   generateLadder,
@@ -17,6 +17,13 @@ import {
   type CheckpointProfile,
   type ContactMethod,
 } from '@/lib/constants'
+import {
+  cleanMeasurements,
+  isMeasurementUnit,
+  type Measurement,
+  type MeasurementCheck,
+  type MeasurementUnit,
+} from '@/lib/measurements'
 
 export type ActionResult<T extends object = object> =
   | ({ ok: true } & T)
@@ -203,6 +210,11 @@ export interface NewOrderItemInput {
   unit?: string
   rate?: number | null
   amount?: number | null
+  /** Made-to-measure sizes; empty when the piece is a standard size. */
+  measurements?: Measurement[]
+  measurement_unit?: MeasurementUnit
+  /** Storage path of the photo uploaded from the form, if any. */
+  photo_path?: string | null
 }
 
 export interface NewOrderInput {
@@ -236,6 +248,9 @@ export async function createOrder(
     if (input.items.some((i) => !Number.isFinite(i.quantity) || i.quantity < 1)) {
       return fail('Every item needs a quantity of at least 1.')
     }
+    if (input.items.some((i) => i.photo_path && !/^items\/[\w.-]+$/.test(i.photo_path))) {
+      return fail('One of the photos did not upload properly. Please add it again.')
+    }
 
     const expected =
       input.expected_date || expectedDispatchDate(input.order_date, input.lead_time_days)
@@ -262,7 +277,12 @@ export async function createOrder(
         advance_paid: input.advance_paid ?? '',
         payment_notes: input.payment_notes ?? '',
       },
-      p_items: input.items,
+      p_items: input.items.map((i) => ({
+        ...i,
+        measurements: cleanMeasurements(i.measurements ?? []),
+        measurement_unit: isMeasurementUnit(i.measurement_unit) ? i.measurement_unit : 'in',
+        photo_path: i.photo_path || null,
+      })),
       p_checkpoints: checkpoints,
     })
 
@@ -373,6 +393,264 @@ export async function recordDispatch(
 
     refreshOrderViews(input.orderId)
     return { ok: true, balance: result.balance, isPartial: result.is_partial }
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Something went wrong.')
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Purchase orders
+// ---------------------------------------------------------------------------
+
+export interface CreatePurchaseOrderInput {
+  orderId: string
+  poDate?: string
+  terms?: string
+  notes?: string
+}
+
+/**
+ * Raise the PO for an order. The number (PO/2026-27/0001) is generated in
+ * the database so it can never be duplicated, and the lines are frozen as
+ * they stand today.
+ */
+export async function createPurchaseOrder(
+  input: CreatePurchaseOrderInput,
+): Promise<ActionResult<{ id: string; po_no: string }>> {
+  try {
+    await requireProfile()
+    const supabase = await createClient()
+
+    const { data, error } = await supabase.rpc('create_purchase_order', {
+      p_order_id: input.orderId,
+      p_po_date: input.poDate || todayIST(),
+      p_terms: input.terms?.trim() || null,
+      p_notes: input.notes?.trim() || null,
+    })
+    if (error) return fail(error.message)
+
+    const result = data as { id: string; po_no: string }
+    refreshOrderViews(input.orderId)
+    revalidatePath(`/orders/${input.orderId}/po`)
+    return { ok: true, id: result.id, po_no: result.po_no }
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Something went wrong.')
+  }
+}
+
+/** Only an admin may cancel a PO; a fresh one can be raised afterwards. */
+export async function cancelPurchaseOrder(poId: string, orderId: string): Promise<ActionResult> {
+  try {
+    await requireAdmin()
+    const supabase = await createClient()
+
+    const { count } = await supabase
+      .from('inwards')
+      .select('id', { count: 'exact', head: true })
+      .eq('po_id', poId)
+    if ((count ?? 0) > 0) {
+      return fail('Goods have already been inwarded against this PO, so it cannot be cancelled.')
+    }
+
+    const { error } = await supabase
+      .from('purchase_orders')
+      .update({ status: 'cancelled' })
+      .eq('id', poId)
+    if (error) return fail(error.message)
+
+    await supabase.from('activity_log').insert({
+      order_id: orderId,
+      action: 'po',
+      detail: 'Purchase order cancelled',
+    })
+
+    refreshOrderViews(orderId)
+    revalidatePath(`/orders/${orderId}/po`)
+    return { ok: true }
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Something went wrong.')
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Inwarding — goods received against a PO
+// ---------------------------------------------------------------------------
+
+export interface InwardLineInput {
+  order_item_id: string
+  qty_received: number
+  /** Price per piece from the vendor's invoice. Stored admin-only. */
+  rate?: number | null
+  measurements_checked: boolean
+  measurement_checks: MeasurementCheck[]
+  has_deviation: boolean
+  is_flagged: boolean
+  flag_reason?: string
+}
+
+export interface RecordInwardInput {
+  poId: string
+  orderId: string
+  inwardDate: string
+  invoiceNo?: string
+  receivedBy?: string
+  remarks?: string
+  lines: InwardLineInput[]
+  /** When pieces are still to come and the vendor gave a date for them. */
+  balancePromisedDate?: string | null
+}
+
+export interface RecordInwardResult {
+  inwardNo: number
+  pcs: number
+  flagged: number
+  balance: number
+}
+
+export async function recordInward(
+  input: RecordInwardInput,
+): Promise<ActionResult<RecordInwardResult>> {
+  try {
+    await requireProfile()
+    const supabase = await createClient()
+    const today = todayIST()
+
+    if (!input.inwardDate) return fail('Please enter the date the goods arrived.')
+    if (input.inwardDate > today) return fail('The inward date cannot be in the future.')
+
+    const lines = input.lines.filter((l) => Number(l.qty_received) > 0 || l.is_flagged)
+    if (lines.length === 0) return fail('Enter at least one piece received.')
+
+    for (const l of lines) {
+      if (l.is_flagged && !l.flag_reason?.trim()) {
+        return fail('Write down the problem for every flagged item so the owner knows what to look at.')
+      }
+      if (l.rate != null && (!Number.isFinite(l.rate) || l.rate < 0)) {
+        return fail('A price cannot be negative.')
+      }
+    }
+
+    const { data, error } = await supabase.rpc('record_inward', {
+      p_po_id: input.poId,
+      p_inward_date: input.inwardDate,
+      p_items: lines.map((l) => ({
+        order_item_id: l.order_item_id,
+        qty_received: Math.max(0, Math.floor(Number(l.qty_received) || 0)),
+        rate: l.rate == null ? null : Number(l.rate),
+        measurement_checks: l.measurement_checks ?? [],
+        measurements_checked: !!l.measurements_checked,
+        has_deviation: !!l.has_deviation,
+        is_flagged: !!l.is_flagged,
+        flag_reason: l.is_flagged ? l.flag_reason?.trim() : null,
+      })),
+      p_invoice_no: input.invoiceNo?.trim() || null,
+      p_received_by: input.receivedBy?.trim() || null,
+      p_remarks: input.remarks?.trim() || null,
+    })
+    if (error) return fail(error.message)
+
+    const result = data as {
+      inward_no: number
+      pcs: number
+      flagged: number
+      balance: number
+      dispatch_balance: number
+    }
+
+    // Pieces still to come and a date for them: keep the order on the
+    // morning list with a short ladder, exactly as a partial dispatch does.
+    if (result.dispatch_balance > 0 && input.balancePromisedDate) {
+      const newDate = input.balancePromisedDate
+      if (!isValidPromisedDate(newDate, today)) {
+        return fail('The promised date for the balance cannot be in the past.')
+      }
+      const checkpoints: Checkpoint[] = generateLadder({
+        anchorDate: today,
+        targetDate: newDate,
+        profile: BALANCE_PROFILE,
+        today,
+        profilePcts: await profilePcts(BALANCE_PROFILE),
+      })
+      const { error: revErr } = await supabase.rpc('apply_revision', {
+        p_order_id: input.orderId,
+        p_new_date: newDate,
+        p_checkpoints: checkpoints,
+        p_reason: `Balance of ${result.balance} pcs promised for ${newDate}`,
+        p_today: today,
+      })
+      if (revErr) return fail(revErr.message)
+    }
+
+    refreshOrderViews(input.orderId)
+    revalidatePath('/inwards')
+    revalidatePath(`/orders/${input.orderId}/po`)
+    return {
+      ok: true,
+      inwardNo: result.inward_no,
+      pcs: result.pcs,
+      flagged: result.flagged,
+      balance: result.balance,
+    }
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Something went wrong.')
+  }
+}
+
+/** The owner has looked at a flagged piece and decided what to do. Admin only. */
+export async function resolveInwardFlag(
+  inwardItemId: string,
+  note: string,
+): Promise<ActionResult> {
+  try {
+    const profile = await requireAdmin()
+    const supabase = await createClient()
+
+    const { data: item } = await supabase
+      .from('inward_items')
+      .select('id, inward:inwards ( order_id )')
+      .eq('id', inwardItemId)
+      .maybeSingle()
+    if (!item) return fail('Could not find that flagged item.')
+
+    const { error } = await supabase
+      .from('inward_items')
+      .update({
+        flag_status: 'resolved',
+        resolved_by: profile.id,
+        resolved_at: new Date().toISOString(),
+        resolution_note: note.trim() || null,
+      })
+      .eq('id', inwardItemId)
+    if (error) return fail(error.message)
+
+    const orderId = (item.inward as unknown as { order_id: string } | null)?.order_id
+    if (orderId) {
+      await supabase.from('activity_log').insert({
+        order_id: orderId,
+        action: 'flag_resolved',
+        detail: `Inward flag resolved${note.trim() ? ` — ${note.trim()}` : ''}`,
+      })
+      refreshOrderViews(orderId)
+    }
+    revalidatePath('/inwards')
+    return { ok: true }
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Something went wrong.')
+  }
+}
+
+/** Reopen a flag the owner resolved by mistake. Admin only. */
+export async function reopenInwardFlag(inwardItemId: string): Promise<ActionResult> {
+  try {
+    await requireAdmin()
+    const supabase = await createClient()
+    const { error } = await supabase
+      .from('inward_items')
+      .update({ flag_status: 'open', resolved_by: null, resolved_at: null, resolution_note: null })
+      .eq('id', inwardItemId)
+    if (error) return fail(error.message)
+    revalidatePath('/inwards')
+    return { ok: true }
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Something went wrong.')
   }

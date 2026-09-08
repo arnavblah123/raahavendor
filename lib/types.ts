@@ -9,6 +9,8 @@ import type {
   Unit,
 } from './constants'
 import type { DateStr } from './dates'
+import type { Measurement, MeasurementCheck, MeasurementUnit } from './measurements'
+import type { PoStatus } from './po'
 
 export interface Profile {
   id: string
@@ -92,6 +94,13 @@ export interface OrderItem {
   unit: Unit
   qty_dispatched: number
   qty_balance: number
+  /** Pieces that have physically arrived and been inwarded against the PO. */
+  qty_received: number
+  /** Made-to-measure sizes, checked again when the piece arrives. */
+  measurements: Measurement[]
+  measurement_unit: MeasurementUnit
+  /** Path inside the private `order-photos` storage bucket. */
+  photo_path: string | null
   sort_order: number
 }
 
@@ -159,6 +168,87 @@ export interface ActivityEntry {
   detail: string | null
   actor_id: string | null
   created_at: string
+}
+
+/** A line of the PO, frozen at the moment the PO was created. No money here. */
+export interface PurchaseOrderLine {
+  order_item_id: string
+  product_name: string
+  description: string | null
+  design_code: string | null
+  colour: string | null
+  size: string | null
+  category: ProductCategory
+  quantity: number
+  unit: Unit
+  measurements: Measurement[]
+  measurement_unit: MeasurementUnit
+  photo_path: string | null
+}
+
+export interface PurchaseOrder {
+  id: string
+  po_no: string
+  order_id: string
+  vendor_id: string
+  po_date: DateStr
+  expected_delivery_date: DateStr
+  status: PoStatus
+  terms: string | null
+  notes: string | null
+  lines: PurchaseOrderLine[]
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** Admin-only. The rates as agreed on the day the PO was issued. */
+export interface PurchaseOrderFinance {
+  po_id: string
+  lines: { order_item_id: string; rate: number | null; amount: number | null }[]
+  total_amount: number | null
+  advance_paid: number | null
+}
+
+export interface Inward {
+  id: string
+  po_id: string
+  order_id: string
+  inward_no: number
+  inward_date: DateStr
+  invoice_no: string | null
+  received_by: string | null
+  remarks: string | null
+  pcs_received: number
+  flagged_count: number
+  created_by: string | null
+  created_at: string
+}
+
+export type FlagStatus = 'open' | 'resolved'
+
+export interface InwardItem {
+  id: string
+  inward_id: string
+  order_item_id: string
+  qty_received: number
+  measurements_checked: boolean
+  measurement_checks: MeasurementCheck[]
+  has_deviation: boolean
+  is_flagged: boolean
+  flag_reason: string | null
+  flag_status: FlagStatus | null
+  resolved_by: string | null
+  resolved_at: string | null
+  resolution_note: string | null
+  created_at: string
+}
+
+/** Admin-only: the price entered from the vendor's invoice at inward. */
+export interface InwardItemFinance {
+  inward_item_id: string
+  rate: number | null
+  amount: number | null
 }
 
 export interface AppSettings {

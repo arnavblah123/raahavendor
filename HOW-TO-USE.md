@@ -102,7 +102,34 @@ Tap **Add** at the bottom of the screen.
 6. **Items** — one row per design. Put the design code in if you have it, it
    makes searching much easier later. **Count in pieces or sets** — this is for
    finished garments, never for fabric by the metre.
-7. Tap **Place order**.
+7. **For every piece, add a photo.** Tap *Add a photo of the piece* — it opens
+   the camera, or you can pick one from the gallery. Photograph the design,
+   the sample or the reference picture. This photo goes on the purchase order
+   and is what the goods are checked against when they arrive.
+8. **If the vendor is making it to size, tick *This piece is made to
+   measurements*** and enter them. Tap the grey chips (Bust, Waist, Length…)
+   to add the usual ones, or type your own. Choose inches or cm at the top.
+   Leave the box unticked for standard sizes.
+9. Tap **Place order**. If any piece has no photo, or measurements are ticked
+   but empty, the app stops and lists them — go back and add them, or place
+   the order anyway if that is deliberate.
+
+### Raising the purchase order
+
+The moment the order is placed you are asked **"Raise a purchase order for the
+vendor now?"** Tap **Create purchase order**. That is all — the PO number
+(`PO/2026-27/0012`) is generated for you and can never repeat.
+
+The PO opens as a document showing every piece with its photo and measurements.
+From there:
+
+- **Print / save as PDF** — on a phone, choose *Save as PDF* in the print
+  screen and you have a file to share.
+- **Send on WhatsApp** — opens WhatsApp with a message listing the pieces and
+  the PO number. Attach the PDF if the vendor wants the full document.
+
+If you tap *Not now*, you can raise the PO later from the order page. There is
+one PO per order.
 
 ---
 
@@ -133,10 +160,40 @@ reminders for the balance. Nothing gets forgotten.
 When the last piece arrives, record that dispatch too and the order closes
 itself automatically.
 
-### After it arrives at the shop
+### After it arrives at the shop — inwarding
 
-Open the order and change **Stage** to **Received**. Once you are completely
-done with it, set it to **Closed** and it moves out of the active lists.
+Open the order and tap **Inward goods**. (It only appears once the order has a
+purchase order — raise one first if you skipped it.)
+
+For every piece on the PO:
+
+1. **Received now** — how many actually came. It is pre-filled with everything
+   still expected; set it to 0 if that design did not come.
+2. **Price per piece** — copy it from the vendor's invoice exactly. You will
+   not see this again afterwards; only Archana can.
+3. **Check the measurements** — if the order had measurements, you will see
+   them listed with a box next to each. **Measure the piece and type what you
+   get.** The difference shows up straight away, in red if it is not the same.
+4. **If anything differs, the app tells you to flag it.** Tick *Flag a problem
+   for the owner* and **write down what is wrong** in plain words — *"Waist
+   came 31, ordered 30 — too tight"*. You cannot save until you have written
+   it. You can flag a piece for any other reason too: damage, wrong colour,
+   wrong fabric.
+
+Then fill in the date, the invoice number and your name, and press **Save
+inward**. If pieces are still to come, it asks when the vendor has promised
+them, just like a partial dispatch.
+
+When the last piece is in, the order moves to **Received** on its own. Once you
+are completely done with it, set the stage to **Closed** and it moves out of
+the active lists.
+
+### What happens to flagged pieces
+
+They appear at the top of the **Today** screen and on the **Inwards** page
+until Archana has looked at them and tapped **Mark as seen**, with a note on
+what was decided — accepted at a discount, sent back for alteration, replaced.
+That note then shows on the order for everyone.
 
 ---
 
@@ -196,7 +253,18 @@ No. Nothing is pushed or expires. Everything you missed will be waiting under
 **Missed follow-ups**.
 
 **I cannot see any prices or amounts.**
-That is intentional for staff accounts. Only Archana can see money.
+That is intentional for staff accounts. Only Archana can see money. That
+includes the invoice price you typed at inward — you can enter it, not read it.
+
+**The photo will not upload.**
+Check you are signed in and have a signal; photos are shrunk on your phone and
+sent straight to storage. If it says storage is not set up, Archana needs to run
+migration 0002 in Supabase.
+
+**The measurements were fine but I still need to flag something.**
+Tick *Flag a problem for the owner* on that piece and write it down. A flag
+does not need a measurement difference — damage, colour and fabric problems
+count just as much.
 
 **I entered something wrong.**
 Open the order and fix it. If you need to change the original promised date or

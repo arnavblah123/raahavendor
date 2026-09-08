@@ -1,26 +1,26 @@
 -- =====================================================================
---  Check that 0001_init.sql installed correctly.
+--  Check that 0001_init.sql AND 0002_po_and_inward.sql installed correctly.
 --
 --  Paste this into the Supabase SQL Editor and press Run, AFTER running
---  the migration. Every row should say OK.
+--  both migrations. Every row should say OK.
 --
 --  Safe to run any time — it only reads, it changes nothing.
 -- =====================================================================
 
-select 'Tables created'   as check, count(*)::text || ' of 14' as result,
-       case when count(*) = 14 then 'OK' else 'PROBLEM' end as status
+select 'Tables created'   as check, count(*)::text || ' of 20' as result,
+       case when count(*) = 20 then 'OK' else 'PROBLEM' end as status
 from pg_tables where schemaname = 'public'
 union all
-select 'Security switched on', count(*)::text || ' of 14',
-       case when count(*) = 14 then 'OK' else 'PROBLEM' end
+select 'Security switched on', count(*)::text || ' of 20',
+       case when count(*) = 20 then 'OK' else 'PROBLEM' end
 from pg_tables where schemaname = 'public' and rowsecurity
 union all
 select 'Security rules', count(*)::text || ' policies',
-       case when count(*) >= 25 then 'OK' else 'PROBLEM' end
+       case when count(*) >= 40 then 'OK' else 'PROBLEM' end
 from pg_policies where schemaname = 'public'
 union all
 select 'Speed indexes', count(*)::text,
-       case when count(*) >= 15 then 'OK' else 'PROBLEM' end
+       case when count(*) >= 21 then 'OK' else 'PROBLEM' end
 from pg_indexes where schemaname = 'public' and indexname like 'idx_%'
 union all
 select 'Reminder functions', count(*)::text || ' of 4',
@@ -28,6 +28,28 @@ select 'Reminder functions', count(*)::text || ' of 4',
 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
 where n.nspname = 'public' and p.proname in
   ('ensure_overdue_followups','record_dispatch','apply_revision','create_order_with_items')
+union all
+select 'PO and inward functions', count(*)::text || ' of 4',
+       case when count(*) = 4 then 'OK' else 'PROBLEM' end
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname in
+  ('financial_year_label','next_po_no','create_purchase_order','record_inward')
+union all
+select 'Measurements on items',
+       case when count(*) = 4 then 'columns present' else 'columns missing' end,
+       case when count(*) = 4 then 'OK' else 'PROBLEM' end
+from information_schema.columns
+where table_schema = 'public' and table_name = 'order_items'
+  and column_name in ('measurements','measurement_unit','photo_path','qty_received')
+union all
+select 'Photo storage bucket',
+       case when count(*) = 1 then 'order-photos (private)' else 'missing' end,
+       case when count(*) = 1 then 'OK' else 'PROBLEM' end
+from storage.buckets where id = 'order-photos' and not public
+union all
+select 'Photo storage rules', count(*)::text || ' policies',
+       case when count(*) >= 3 then 'OK' else 'PROBLEM' end
+from pg_policies where schemaname = 'storage' and policyname like 'order photos%'
 union all
 select 'Vendor types ready', count(*)::text || ' categories',
        case when count(*) = 6 then 'OK' else 'PROBLEM' end

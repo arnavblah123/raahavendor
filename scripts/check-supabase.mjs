@@ -154,12 +154,31 @@ if (code === '42501' || probe.status === 401 || probe.status === 403) {
   warn(`Unexpected response from the orders table (${probe.status})`, probe.text.slice(0, 160))
 }
 
-// --- 5. Reference data seeded? ---------------------------------------------
+// --- 5. Did migration 0002 run? ----------------------------------------------
+// purchase_orders only exists after 0002. As with orders above, a missing
+// table has a distinctive error, while a locked table means it is there.
+const po = await get('/rest/v1/purchase_orders?select=id&limit=1')
+const poCode = po.json?.code
+const poMessage = po.json?.message || ''
+if (poCode === '42P01' || /relation .* does not exist|Could not find the table/i.test(poMessage)) {
+  bad('Migration 0002 has not been run',
+      'Paste supabase/migrations/0002_po_and_inward.sql into the Supabase SQL Editor and\n      press Run. It adds photos, measurements, purchase orders and inwarding.')
+  failed = true
+} else {
+  ok('Purchase orders and inwarding are set up')
+}
+
+// --- 6. Reference data seeded? ---------------------------------------------
 const settings = await get('/rest/v1/app_settings?select=id&limit=1')
 if (settings.json?.code === '42P01') {
   warn('app_settings table missing', 'The migration may not have finished. Re-run supabase/verify_setup.sql.')
 } else {
   ok('Settings table present')
+}
+
+if (failed) {
+  console.log(`\n${RED}Fix the above, then run this again.${RESET}\n`)
+  process.exit(1)
 }
 
 console.log(`\n${GREEN}${BOLD}All good.${RESET} Your settings are correct and the database is set up.`)

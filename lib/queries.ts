@@ -1,14 +1,19 @@
 import 'server-only'
-import { COMING_UP_DAYS, OPEN_STAGES } from './constants'
+import { COMING_UP_DAYS, OPEN_STAGES, PHOTO_BUCKET, PHOTO_URL_TTL_SECONDS } from './constants'
 import { addDaysStr, daysBetween, monthBounds, todayIST, type DateStr } from './dates'
 import { createClient } from './supabase/server'
 import type {
   AppSettings,
   Followup,
+  Inward,
+  InwardItem,
+  InwardItemFinance,
   Order,
   OrderFinance,
   OrderItem,
   OrderWithContext,
+  PurchaseOrder,
+  PurchaseOrderFinance,
   Vendor,
 } from './types'
 
@@ -221,8 +226,17 @@ async function getSnapshot({
 export async function getOrderDetail(id: string) {
   const supabase = await createClient()
 
-  const [orderRes, followupsRes, revisionsRes, dispatchesRes, activityRes, financeRes, itemFinanceRes] =
-    await Promise.all([
+  const [
+    orderRes,
+    followupsRes,
+    revisionsRes,
+    dispatchesRes,
+    activityRes,
+    financeRes,
+    itemFinanceRes,
+    poRes,
+    inwardsRes,
+  ] = await Promise.all([
       supabase.from('orders').select(ORDER_SELECT).eq('id', id).single(),
       supabase.from('followups').select('*').eq('order_id', id).order('due_date'),
       supabase.from('order_revisions').select('*').eq('order_id', id).order('created_at'),
@@ -239,9 +253,23 @@ export async function getOrderDetail(id: string) {
         .limit(100),
       supabase.from('order_finance').select('*').eq('order_id', id).maybeSingle(),
       supabase.from('order_item_finance').select('*'),
+      supabase
+        .from('purchase_orders')
+        .select('*')
+        .eq('order_id', id)
+        .neq('status', 'cancelled')
+        .maybeSingle(),
+      supabase
+        .from('inwards')
+        .select('*, inward_items ( * )')
+        .eq('order_id', id)
+        .order('inward_no'),
     ])
 
   if (orderRes.error || !orderRes.data) return null
+
+  const order = orderRes.data as unknown as OrderWithContext
+  const photoUrls = await signPhotoUrls(order.order_items.map((i) => i.photo_path))
 
   return {
     order: orderRes.data as unknown as OrderWithContext,
@@ -254,7 +282,168 @@ export async function getOrderDetail(id: string) {
     // null for staff — RLS returns no rows rather than blanking a value.
     finance: (financeRes.data as OrderFinance | null) ?? null,
     itemFinance: (itemFinanceRes.data ?? []) as { order_item_id: string; rate: number | null; amount: number | null }[],
+    purchaseOrder: (poRes.data as PurchaseOrder | null) ?? null,
+    inwards: (inwardsRes.data ?? []) as InwardWithItems[],
+    /** photo_path -> short-lived signed URL, for the items that have one. */
+    photoUrls,
   }
+}
+
+export type InwardWithItems = Inward & { inward_items: InwardItem[] }
+
+/**
+ * Signed links for photos in the private bucket. One call for the whole
+ * page rather than one per photo. Missing or failed paths are left out so a
+ * broken photo never breaks the page.
+ */
+export async function signPhotoUrls(
+  paths: (string | null | undefined)[],
+): Promise<Record<string, string>> {
+  const unique = Array.from(new Set(paths.filter((p): p is string => !!p)))
+  if (unique.length === 0) return {}
+  const supabase = await createClient()
+  const { data } = await supabase.storage
+    .from(PHOTO_BUCKET)
+    .createSignedUrls(unique, PHOTO_URL_TTL_SECONDS)
+  const out: Record<string, string> = {}
+  for (const row of data ?? []) {
+    if (row.path && row.signedUrl && !row.error) out[row.path] = row.signedUrl
+  }
+  return out
+}
+
+/** Everything the printable PO and the inward screen need. */
+export async function getPurchaseOrderForOrder(orderId: string) {
+  const supabase = await createClient()
+
+  const [poRes, orderRes] = await Promise.all([
+    supabase
+      .from('purchase_orders')
+      .select('*, vendor:vendors ( * )')
+      .eq('order_id', orderId)
+      .neq('status', 'cancelled')
+      .maybeSingle(),
+    supabase.from('orders').select(ORDER_SELECT).eq('id', orderId).maybeSingle(),
+  ])
+
+  if (!poRes.data || !orderRes.data) return null
+
+  const po = poRes.data as unknown as PurchaseOrder & { vendor: Vendor | null }
+  const order = orderRes.data as unknown as OrderWithContext
+
+  const [financeRes, orderFinanceRes, inwardsRes, photoUrls] = await Promise.all([
+    // Empty for staff — RLS returns no row.
+    supabase.from('purchase_order_finance').select('*').eq('po_id', po.id).maybeSingle(),
+    supabase.from('order_finance').select('*').eq('order_id', orderId).maybeSingle(),
+    supabase
+      .from('inwards')
+      .select('*, inward_items ( * )')
+      .eq('po_id', po.id)
+      .order('inward_no'),
+    signPhotoUrls(po.lines.map((l) => l.photo_path)),
+  ])
+
+  return {
+    po,
+    order,
+    finance: (financeRes.data as PurchaseOrderFinance | null) ?? null,
+    orderFinance: (orderFinanceRes.data as OrderFinance | null) ?? null,
+    inwards: (inwardsRes.data ?? []) as InwardWithItems[],
+    photoUrls,
+  }
+}
+
+/** Invoice prices for a set of inward items. Empty for staff — RLS returns no rows. */
+export async function getInwardFinance(
+  inwardItemIds: string[],
+): Promise<Record<string, InwardItemFinance>> {
+  if (inwardItemIds.length === 0) return {}
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('inward_item_finance')
+    .select('*')
+    .in('inward_item_id', inwardItemIds)
+  const out: Record<string, InwardItemFinance> = {}
+  for (const f of (data ?? []) as InwardItemFinance[]) out[f.inward_item_id] = f
+  return out
+}
+
+/** One inward item as the owner's list shows it: with its order, PO and item. */
+export interface FlaggedInwardItem extends InwardItem {
+  inward: Inward & {
+    purchase_order: Pick<PurchaseOrder, 'id' | 'po_no'> | null
+    order: (Pick<Order, 'id' | 'order_no'> & { vendor: Pick<Vendor, 'id' | 'name'> | null }) | null
+  }
+  order_item: Pick<
+    OrderItem,
+    'id' | 'product_name' | 'design_code' | 'colour' | 'size' | 'measurement_unit' | 'photo_path'
+  > | null
+}
+
+const INWARD_ITEM_SELECT = `
+  *,
+  inward:inwards (
+    *,
+    purchase_order:purchase_orders ( id, po_no ),
+    order:orders ( id, order_no, vendor:vendors ( id, name ) )
+  ),
+  order_item:order_items ( id, product_name, design_code, colour, size, measurement_unit, photo_path )
+`
+
+/** Every flagged inward item, open ones first, newest first within each. */
+export async function getFlaggedInwardItems(opts: { isAdmin: boolean }) {
+  const supabase = await createClient()
+
+  const [itemsRes, financeRes] = await Promise.all([
+    supabase
+      .from('inward_items')
+      .select(INWARD_ITEM_SELECT)
+      .eq('is_flagged', true)
+      .order('created_at', { ascending: false })
+      .limit(300),
+    opts.isAdmin
+      ? supabase.from('inward_item_finance').select('*')
+      : Promise.resolve({ data: [] as InwardItemFinance[] }),
+  ])
+
+  const rows = (itemsRes.data ?? []) as unknown as FlaggedInwardItem[]
+  rows.sort((a, b) => {
+    if (a.flag_status !== b.flag_status) return a.flag_status === 'open' ? -1 : 1
+    return b.created_at.localeCompare(a.created_at)
+  })
+
+  const financeByItem: Record<string, InwardItemFinance> = {}
+  for (const f of (financeRes.data ?? []) as InwardItemFinance[]) financeByItem[f.inward_item_id] = f
+
+  return { rows, financeByItem }
+}
+
+/** Recent inwards across every order — the receiving log. */
+export async function getRecentInwards(limit = 50) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('inwards')
+    .select(
+      `*, purchase_order:purchase_orders ( id, po_no ),
+          order:orders ( id, order_no, vendor:vendors ( id, name ) )`,
+    )
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  return (data ?? []) as unknown as (Inward & {
+    purchase_order: Pick<PurchaseOrder, 'id' | 'po_no'> | null
+    order: (Pick<Order, 'id' | 'order_no'> & { vendor: Pick<Vendor, 'id' | 'name'> | null }) | null
+  })[]
+}
+
+/** How many flagged inward items are still waiting on the owner. */
+export async function countOpenFlags(): Promise<number> {
+  const supabase = await createClient()
+  const { count } = await supabase
+    .from('inward_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('is_flagged', true)
+    .eq('flag_status', 'open')
+  return count ?? 0
 }
 
 export async function getVendors(opts: { activeOnly?: boolean } = {}) {

@@ -1,36 +1,63 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronLeft, Truck } from 'lucide-react'
-import { getOrderDetail, getSettings } from '@/lib/queries'
+import { ChevronLeft, Ruler, Truck } from 'lucide-react'
+import { getInwardFinance, getOrderDetail, getSettings } from '@/lib/queries'
 import { isAdmin } from '@/lib/auth'
 import { Badge, PartialBadge, RevisionBadge, StageBadge } from '@/components/ui/badge'
 import { OrderActions } from '@/components/orders/order-actions'
 import { OrderTimeline } from '@/components/orders/order-timeline'
+import { PoSection } from '@/components/orders/po-section'
+import { InwardList } from '@/components/orders/inward-list'
 import { formatDate, formatDateTime, daysBetween, todayIST } from '@/lib/dates'
 import { formatMoney } from '@/lib/money'
+import { formatMeasurements, parseMeasurements } from '@/lib/measurements'
 import { DEFAULT_WHATSAPP_TEMPLATE, PRODUCT_CATEGORY_LABELS } from '@/lib/constants'
 import { totalBalancePcs, totalOrderedPcs } from '@/lib/whatsapp'
 import type { Dispatch } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
-export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function OrderDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ placed?: string; inwarded?: string }>
+}) {
   const { id } = await params
+  const query = await searchParams
   const [detail, settings, admin] = await Promise.all([getOrderDetail(id), getSettings(), isAdmin()])
 
   if (!detail) notFound()
 
-  const { order, followups, revisions, dispatches, activity, finance, itemFinance } = detail
+  const {
+    order,
+    followups,
+    revisions,
+    dispatches,
+    activity,
+    finance,
+    itemFinance,
+    purchaseOrder,
+    inwards,
+    photoUrls,
+  } = detail
   const today = todayIST()
   const items = order.order_items ?? []
+
+  const inwardFinance = admin
+    ? await getInwardFinance(inwards.flatMap((i) => i.inward_items.map((x) => x.id)))
+    : {}
 
   const ordered = totalOrderedPcs(items)
   const balance = totalBalancePcs(items)
   const dispatchedPcs = ordered - balance
+  const receivedPcs = items.reduce((s, i) => s + (i.qty_received ?? 0), 0)
 
   const rateByItem = new Map(itemFinance.map((f) => [f.order_item_id, f]))
 
   const isOpen = !['dispatched', 'received', 'closed', 'cancelled'].includes(order.stage)
+  const isFinished = ['closed', 'cancelled'].includes(order.stage)
   const daysLeft = daysBetween(today, order.current_expected_dispatch_date)
 
   const dispatchRows = dispatches as unknown as (Dispatch & {
@@ -48,6 +75,15 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           Orders
         </Link>
       </div>
+
+      {query.inwarded && (
+        <div className="rounded-lg border border-done/40 bg-done-wash p-3.5 text-[13px] text-charcoal">
+          <span className="font-semibold text-done">Inward {query.inwarded} saved.</span>{' '}
+          {receivedPcs >= ordered
+            ? 'Every piece is in — the order is marked as received.'
+            : `${ordered - receivedPcs} of ${ordered} pcs still to come.`}
+        </div>
+      )}
 
       <header className="card p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
@@ -69,6 +105,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           {order.priority === 'urgent' && <Badge tone="overdue">Urgent</Badge>}
           <RevisionBadge count={order.revision_count} />
           <PartialBadge dispatched={dispatchedPcs} total={ordered} />
+          {purchaseOrder && <Badge tone="gold">{purchaseOrder.po_no}</Badge>}
         </div>
 
         {/* The headline number: how late, or how long left. */}
@@ -134,6 +171,16 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </div>
       </header>
 
+      <PoSection
+        orderId={order.id}
+        orderNo={order.order_no}
+        po={purchaseOrder}
+        canInward={!!purchaseOrder && receivedPcs < ordered && !isFinished}
+        isAdmin={admin}
+        justPlaced={query.placed === '1'}
+        isFinished={isFinished}
+      />
+
       {/* Items */}
       <section>
         <h2 className="mb-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-muted">
@@ -142,57 +189,87 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         <div className="card divide-y divide-line overflow-hidden">
           {items.map((i) => {
             const fin = rateByItem.get(i.id)
+            const measurements = parseMeasurements(i.measurements)
+            const photo = i.photo_path ? photoUrls[i.photo_path] : undefined
             return (
-              <div key={i.id} className="p-3.5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[14px] font-medium text-charcoal">
-                      {i.design_code && <span className="text-muted">{i.design_code} · </span>}
-                      {i.product_name}
-                    </p>
-                    <p className="mt-0.5 text-[12px] text-muted">
-                      {[
-                        PRODUCT_CATEGORY_LABELS[i.category],
-                        i.colour,
-                        i.size,
-                        i.description,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-[14px] font-medium text-charcoal">
-                      {i.quantity} {i.unit}
-                    </p>
-                    {admin && fin?.rate != null && (
-                      <p className="text-[12px] text-muted">
-                        {formatMoney(Number(fin.rate))} each
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {i.qty_dispatched > 0 && (
-                  <div className="mt-2">
-                    <div className="h-1.5 overflow-hidden rounded-full bg-parchment">
-                      <div
-                        className={`h-full rounded-full ${i.qty_balance === 0 ? 'bg-done' : 'bg-today'}`}
-                        style={{ width: `${Math.round((i.qty_dispatched / i.quantity) * 100)}%` }}
-                      />
-                    </div>
-                    <p className="mt-1 text-[12px] text-muted">
-                      {i.qty_dispatched} sent
-                      {i.qty_balance > 0 ? ` · ${i.qty_balance} pending` : ' · complete'}
-                    </p>
+              <div key={i.id} className="flex gap-3 p-3.5">
+                {photo ? (
+                  <a href={photo} target="_blank" rel="noopener noreferrer" className="shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo}
+                      alt={i.product_name}
+                      className="size-16 rounded-md border border-line object-cover"
+                    />
+                  </a>
+                ) : (
+                  <div
+                    className="flex size-16 shrink-0 items-center justify-center rounded-md border border-dashed border-line bg-parchment/60 text-[10px] uppercase tracking-wide text-muted"
+                    title="No photo was added when the order was placed"
+                  >
+                    No photo
                   </div>
                 )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-medium text-charcoal">
+                        {i.design_code && <span className="text-muted">{i.design_code} · </span>}
+                        {i.product_name}
+                      </p>
+                      <p className="mt-0.5 text-[12px] text-muted">
+                        {[
+                          PRODUCT_CATEGORY_LABELS[i.category],
+                          i.colour,
+                          i.size,
+                          i.description,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-[14px] font-medium text-charcoal">
+                        {i.quantity} {i.unit}
+                      </p>
+                      {admin && fin?.rate != null && (
+                        <p className="text-[12px] text-muted">
+                          {formatMoney(Number(fin.rate))} each
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {measurements.length > 0 && (
+                    <p className="mt-1.5 flex items-start gap-1 text-[12px] text-ink">
+                      <Ruler className="mt-0.5 size-3.5 shrink-0 text-gold" />
+                      <span>{formatMeasurements(measurements, i.measurement_unit)}</span>
+                    </p>
+                  )}
+
+                  {(i.qty_dispatched > 0 || (i.qty_received ?? 0) > 0) && (
+                    <div className="mt-2">
+                      <div className="h-1.5 overflow-hidden rounded-full bg-parchment">
+                        <div
+                          className={`h-full rounded-full ${i.qty_balance === 0 ? 'bg-done' : 'bg-today'}`}
+                          style={{ width: `${Math.round((i.qty_dispatched / i.quantity) * 100)}%` }}
+                        />
+                      </div>
+                      <p className="mt-1 text-[12px] text-muted">
+                        {i.qty_dispatched} sent
+                        {i.qty_balance > 0 ? ` · ${i.qty_balance} pending` : ' · complete'}
+                        {(i.qty_received ?? 0) > 0 && ` · ${i.qty_received} received in shop`}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             )
           })}
           <div className="flex items-center justify-between bg-parchment/40 px-3.5 py-2.5">
             <span className="text-[13px] font-medium text-ink">
               {ordered} pcs ordered · {dispatchedPcs} sent · {balance} pending
+              {receivedPcs > 0 && ` · ${receivedPcs} received`}
             </span>
             {admin && finance?.total_amount != null && (
               <span className="text-[14px] font-semibold text-charcoal">
@@ -202,6 +279,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </div>
         </div>
       </section>
+
+      <InwardList inwards={inwards} items={items} financeByItem={inwardFinance} isAdmin={admin} />
 
       {/* Dispatches */}
       {dispatchRows.length > 0 && (
