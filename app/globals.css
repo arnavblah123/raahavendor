@@ -61,3 +61,39 @@
     transform: translateX(100%);
   }
 }
+
+/* The purchase order prints as a clean A4 document: no chrome, no shadows. */
+@media print {
+  header,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    padding: 0;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .po-document {
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 14mm;
+}

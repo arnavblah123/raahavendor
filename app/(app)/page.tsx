@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { CalendarCheck, ChevronRight, PartyPopper } from 'lucide-react'
-import { getDashboard, getSettings } from '@/lib/queries'
+import { CalendarCheck, ChevronRight, Flag, PartyPopper } from 'lucide-react'
+import { countOpenFlags, getDashboard, getSettings } from '@/lib/queries'
 import { getProfile } from '@/lib/auth'
 import { formatDate, greetingIST, todayIST } from '@/lib/dates'
 import { DEFAULT_WHATSAPP_TEMPLATE, COMING_UP_DAYS } from '@/lib/constants'
@@ -27,7 +27,11 @@ async function Dashboard() {
   const profile = await getProfile()
   const isAdmin = profile?.role === 'admin'
 
-  const [data, settings] = await Promise.all([getDashboard({ isAdmin }), getSettings()])
+  const [data, settings, openFlags] = await Promise.all([
+    getDashboard({ isAdmin }),
+    getSettings(),
+    countOpenFlags(),
+  ])
   const template = settings?.whatsapp_template || DEFAULT_WHATSAPP_TEMPLATE
 
   const { overdue, dueToday, missed, comingUp, today, snapshot, vendorsToChase } = data
@@ -56,6 +60,26 @@ async function Dashboard() {
       </header>
 
       <SnapshotStrip snapshot={snapshot} isAdmin={isAdmin} />
+
+      {openFlags > 0 && (
+        <Link
+          href="/inwards"
+          className="card flex items-center gap-3 border-l-4 border-l-overdue p-3.5 hover:bg-parchment/50"
+        >
+          <Flag className="size-5 shrink-0 text-overdue" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[14px] font-semibold text-charcoal">
+              {openFlags} {openFlags === 1 ? 'piece' : 'pieces'} flagged at inward
+            </p>
+            <p className="text-[12px] text-muted">
+              {isAdmin
+                ? 'Wrong measurements or another problem — have a look and decide.'
+                : 'Waiting for the owner to look at them.'}
+            </p>
+          </div>
+          <ChevronRight className="size-4 shrink-0 text-muted" />
+        </Link>
+      )}
 
       {nothingToDo && (
         <EmptyState

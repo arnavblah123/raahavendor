@@ -71,6 +71,12 @@ export const PRODUCT_CATEGORY_LABELS: Record<ProductCategory, string> = {
   other: 'Other',
 }
 
+/** Photos live in a private Supabase Storage bucket; see migration 0002. */
+export const PHOTO_BUCKET = 'order-photos'
+
+/** How long a signed photo link stays valid once a page has been rendered. */
+export const PHOTO_URL_TTL_SECONDS = 60 * 60
+
 /** Finished garments only — no metres, no kilos. */
 export const UNITS = ['pcs', 'set'] as const
 export type Unit = (typeof UNITS)[number]

@@ -87,7 +87,7 @@ export function SettingsForm({
 
   const samplePreview = renderTemplate(template, {
     vendor: { name: 'Shyam Fabrics', contact_person: 'Ramesh' },
-    orderNo: 'RAAHA-PO-0007',
+    orderNo: 'RAAHA-ORD-0007',
     orderDate: addDaysStr(today, -20),
     promisedDate: addDaysStr(today, 12),
     items: [

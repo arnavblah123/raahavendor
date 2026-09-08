@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { BarChart3, LogOut, Settings } from 'lucide-react'
+import { BarChart3, LogOut, PackageOpen, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 
@@ -10,6 +10,7 @@ const LINKS = [
   { href: '/', label: 'Today' },
   { href: '/orders', label: 'Orders' },
   { href: '/vendors', label: 'Vendors' },
+  { href: '/inwards', label: 'Inwards' },
   { href: '/reports', label: 'Reports' },
 ]
 
@@ -53,6 +54,13 @@ export function TopBar({ name, isAdmin }: { name: string; isAdmin: boolean }) {
         </nav>
 
         <div className="ml-auto flex items-center gap-1">
+          <Link
+            href="/inwards"
+            className="tap rounded-md text-muted hover:bg-parchment hover:text-charcoal md:hidden"
+            aria-label="Inwards"
+          >
+            <PackageOpen className="size-5" />
+          </Link>
           <Link
             href="/reports"
             className="tap rounded-md text-muted hover:bg-parchment hover:text-charcoal md:hidden"
