@@ -251,9 +251,10 @@ is the *proof*. Each step checks the previous one.
    **Settings → Purchase order details**. The number is generated automatically as
    `PO/2026-27/0001` and restarts every financial year; it is generated inside
    the database, so two people raising POs at the same moment can never get the
-   same number. The PO lists every piece with its photo and measurements,
-   prints on A4, saves as PDF from the print dialog, and can be sent on
-   WhatsApp. Rates appear on it only when an admin raises it.
+   same number. The PO lists every piece with its photo and measurements
+   and is built into a PDF in the browser, so **Send PO** hands the document
+   itself to WhatsApp or email through the phone's share sheet. It also
+   prints on A4. Rates appear on it only when an admin raises it.
 3. **Inward the goods** — when the parcel arrives, open the order and tap
    **Inward goods**. For every line you enter how many came and the price on
    the vendor's invoice. If the order carried measurements you measure the

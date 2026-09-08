@@ -11,6 +11,7 @@ import { formatMeasurements, parseMeasurements } from '@/lib/measurements'
 import { PO_STATUS_LABELS, poWhatsappMessage, resolvePoDetails } from '@/lib/po'
 import { PRODUCT_CATEGORY_LABELS } from '@/lib/constants'
 import { whatsappUrl } from '@/lib/whatsapp'
+import type { PoPdfInput } from '@/lib/po-pdf'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Purchase order — Raaha' }
@@ -49,17 +50,67 @@ export default async function PurchaseOrderPage({ params }: { params: Promise<{ 
   const receivedPcs = order.order_items.reduce((s, i) => s + (i.qty_received ?? 0), 0)
   const canInward = receivedPcs < totalPcs && !['closed', 'cancelled'].includes(order.stage)
 
-  const wa = whatsappUrl(
-    vendor?.phone,
-    poWhatsappMessage({
-      vendorName: vendor?.name,
-      poNo: po.po_no,
-      poDate: po.po_date,
-      expectedDate: po.expected_delivery_date,
-      lines,
-      from,
+  const message = poWhatsappMessage({
+    vendorName: vendor?.name,
+    poNo: po.po_no,
+    poDate: po.po_date,
+    expectedDate: po.expected_delivery_date,
+    lines,
+    from,
+  })
+  const wa = whatsappUrl(vendor?.phone, message)
+  const emailHref =
+    `mailto:${encodeURIComponent(vendor?.email ?? '')}` +
+    `?subject=${encodeURIComponent(`Purchase order ${po.po_no} — ${from.company_name}`)}` +
+    `&body=${encodeURIComponent(message + '\n\n(The PO is attached as a PDF.)')}`
+
+  // Everything the browser needs to build the PDF — same data as the page below.
+  const pdfInput: PoPdfInput = {
+    poNo: po.po_no,
+    poDate: formatDate(po.po_date),
+    expectedDate: formatDate(po.expected_delivery_date),
+    orderNo: order.order_no,
+    orderDate: formatDate(order.order_date),
+    from: {
+      company_name: from.company_name,
+      tagline: from.tagline,
+      address: from.address,
+      phone: from.phone,
+      email: from.email,
+      gstin: from.gstin,
+      signatory: from.signatory,
+    },
+    vendor: {
+      name: vendor?.name ?? '—',
+      company_name: vendor?.company_name ?? null,
+      contact_person: vendor?.contact_person ?? null,
+      city: vendor?.city ?? null,
+      phone: vendor?.phone ?? null,
+      gst_no: vendor?.gst_no ?? null,
+    },
+    lines: lines.map((l, idx) => {
+      const r = rateByItem.get(l.order_item_id)
+      const m = parseMeasurements(l.measurements)
+      return {
+        n: idx + 1,
+        product_name: l.product_name,
+        design_code: l.design_code,
+        category: PRODUCT_CATEGORY_LABELS[l.category],
+        details: [l.colour, l.size, l.description].filter(Boolean).join(' · '),
+        measurements: m.length > 0 ? formatMeasurements(m, l.measurement_unit) : '',
+        quantity: l.quantity,
+        unit: l.unit,
+        rate: showMoney && r?.rate != null ? Number(r.rate) : null,
+        amount: showMoney ? Number(r?.amount) || (Number(r?.rate) || 0) * l.quantity || null : null,
+        photoUrl: l.photo_path ? photoUrls[l.photo_path] ?? null : null,
+      }
     }),
-  )
+    showMoney,
+    total: showMoney ? total : null,
+    advance: showMoney ? advance : 0,
+    terms: po.terms,
+    notes: po.notes,
+  }
 
   return (
     <div className="space-y-4">
@@ -76,7 +127,14 @@ export default async function PurchaseOrderPage({ params }: { params: Promise<{ 
         </Badge>
       </div>
 
-      <PoPrintActions orderId={id} whatsappHref={wa} canInward={canInward} />
+      <PoPrintActions
+        orderId={id}
+        poNo={po.po_no}
+        pdfInput={pdfInput}
+        whatsappHref={wa}
+        emailHref={emailHref}
+        canInward={canInward}
+      />
 
       {/* ---- The document ---- */}
       <article className="po-document rounded-lg border border-line bg-white p-5 text-charcoal sm:p-8">

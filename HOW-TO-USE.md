@@ -123,10 +123,13 @@ vendor now?"** Tap **Create purchase order**. That is all — the PO number
 The PO opens as a document showing every piece with its photo and measurements.
 From there:
 
-- **Print / save as PDF** — on a phone, choose *Save as PDF* in the print
-  screen and you have a file to share.
-- **Send on WhatsApp** — opens WhatsApp with a message listing the pieces and
-  the PO number. Attach the PDF if the vendor wants the full document.
+- **Send PO (WhatsApp / email)** — the big gold button. On a phone it opens
+  the share sheet with the **PO attached as a PDF** — photos, measurements
+  and all. Pick WhatsApp and the vendor's chat, or Gmail, and send. On a
+  computer it saves the PDF to your downloads and gives you WhatsApp and
+  email buttons; attach the file from downloads.
+- **Download PDF** — just the file, to keep or forward later.
+- **Print** — for a paper copy.
 
 If you tap *Not now*, you can raise the PO later from the order page. There is
 one PO per order.
