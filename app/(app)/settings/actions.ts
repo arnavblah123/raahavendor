@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/auth'
 import { CHECKPOINT_PROFILE_KEYS, type Role } from '@/lib/constants'
 import type { ActionResult } from '@/app/(app)/actions'
+import { DEFAULT_PO_DETAILS, type PoDetails } from '@/lib/po'
 import seedVendors from '@/data/vendors/vendors.json'
 
 function fail(error: string): { ok: false; error: string } {
@@ -50,6 +51,39 @@ export async function saveSettings(input: {
 
     revalidatePath('/settings')
     revalidatePath('/')
+    return { ok: true }
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Something went wrong.')
+  }
+}
+
+/** The company details printed on every purchase order. Admin only. */
+export async function savePoDetails(input: Partial<PoDetails>): Promise<ActionResult> {
+  try {
+    const admin = await requireAdmin()
+    const supabase = await createClient()
+
+    const details: PoDetails = { ...DEFAULT_PO_DETAILS }
+    for (const key of Object.keys(details) as (keyof PoDetails)[]) {
+      const v = input[key]
+      details[key] = typeof v === 'string' ? v.trim() : ''
+    }
+    if (!details.company_name) return fail('The company name cannot be blank — it is printed on every PO.')
+
+    const { error } = await supabase
+      .from('app_settings')
+      .update({ po_details: details, updated_at: new Date().toISOString(), updated_by: admin.id })
+      .eq('id', true)
+
+    if (error) {
+      if (/po_details/.test(error.message) && /column|schema cache/i.test(error.message)) {
+        return fail('Run migration 0003 in Supabase first (supabase/migrations/0003_po_details.sql), then save again.')
+      }
+      return fail(error.message)
+    }
+
+    revalidatePath('/settings')
+    revalidatePath('/orders')
     return { ok: true }
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Something went wrong.')

@@ -131,6 +131,10 @@ From there:
 If you tap *Not now*, you can raise the PO later from the order page. There is
 one PO per order.
 
+The PO goes out in the name of **NB TEXTILE**. Archana sets the address, phone,
+GSTIN and standard terms that print on it once, under **Settings → Purchase
+order details**.
+
 ---
 
 ## When the goods arrive

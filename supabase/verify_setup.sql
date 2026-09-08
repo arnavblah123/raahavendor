@@ -1,8 +1,8 @@
 -- =====================================================================
---  Check that 0001_init.sql AND 0002_po_and_inward.sql installed correctly.
+--  Check that migrations 0001, 0002 and 0003 installed correctly.
 --
 --  Paste this into the Supabase SQL Editor and press Run, AFTER running
---  both migrations. Every row should say OK.
+--  all three migrations. Every row should say OK.
 --
 --  Safe to run any time — it only reads, it changes nothing.
 -- =====================================================================
@@ -41,6 +41,12 @@ select 'Measurements on items',
 from information_schema.columns
 where table_schema = 'public' and table_name = 'order_items'
   and column_name in ('measurements','measurement_unit','photo_path','qty_received')
+union all
+select 'PO company details',
+       case when count(*) = 1 then 'column present' else 'run 0003_po_details.sql' end,
+       case when count(*) = 1 then 'OK' else 'PROBLEM' end
+from information_schema.columns
+where table_schema = 'public' and table_name = 'app_settings' and column_name = 'po_details'
 union all
 select 'Photo storage bucket',
        case when count(*) = 1 then 'order-photos (private)' else 'missing' end,
