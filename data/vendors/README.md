@@ -10,11 +10,13 @@ up for this app.
 | `raaha-vendors-import.sql` | The same list as SQL, for anyone who prefers the Supabase SQL Editor. Not needed if you use the button. |
 | `vendor-book.html` | A searchable page of the list. Download and open in a browser. |
 
-## How to get them into the app
+## How they get into the app
 
-Sign in as admin → **Settings** → **Import vendors** → tap the button. Every
-vendor not already in the app is added; names that already exist are skipped,
-so pressing it twice is harmless.
+They load themselves. The first time anyone opens the Today, Vendors or Place
+order screen after a deploy, every vendor not already in the app is added.
+Names that already exist are skipped, so this can run on every visit and never
+duplicates. There is also an **Import vendors** button under Settings, which
+runs exactly the same code by hand.
 
 ## What was cleaned up
 

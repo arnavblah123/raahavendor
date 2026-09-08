@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { CalendarCheck, ChevronRight, Flag, PartyPopper } from 'lucide-react'
 import { countOpenFlags, getDashboard, getSettings } from '@/lib/queries'
 import { getProfile } from '@/lib/auth'
+import { ensureSeedVendors } from '@/lib/seed-vendors'
 import { formatDate, greetingIST, todayIST } from '@/lib/dates'
 import { DEFAULT_WHATSAPP_TEMPLATE, COMING_UP_DAYS } from '@/lib/constants'
 import { FollowupCard, ComingUpRow } from '@/components/dashboard/followup-card'
@@ -26,6 +27,7 @@ export default function DashboardPage() {
 async function Dashboard() {
   const profile = await getProfile()
   const isAdmin = profile?.role === 'admin'
+  await ensureSeedVendors()
 
   const [data, settings, openFlags] = await Promise.all([
     getDashboard({ isAdmin }),

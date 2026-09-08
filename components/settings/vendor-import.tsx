@@ -37,7 +37,7 @@ export function VendorImport({ pending: pendingCount }: { pending: number }) {
   return (
     <FieldGroup
       title="Import vendors"
-      description="The vendor list from the old software, ready to load. Names already in the app are skipped, so this is safe to press more than once."
+      description="The vendor list from the old software loads itself the first time the app is opened after a deploy. This button only exists in case that has not happened yet."
     >
       {result ? (
         <p className="flex items-center gap-2 rounded-md border border-done/40 bg-done-wash px-3 py-2.5 text-[13px] text-charcoal">
