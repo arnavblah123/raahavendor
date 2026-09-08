@@ -213,8 +213,8 @@ overdue or only urgent orders.
 
 ## Vendors from the old software
 
-They are already loaded — Archana imports them once from **Settings → Import
-vendors**. Two of them (R.F. Couture and Shubhandam) had made-up phone numbers
+They are already loaded — they came across on their own the first time the
+app was opened. Two of them (R.F. Couture and Shubhandam) had made-up phone numbers
 in the old software, so their phone is blank; add the real number on their
 vendor page when you have it.
 

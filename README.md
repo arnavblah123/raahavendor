@@ -170,9 +170,9 @@ password-reset emails to work.
 ### Step 7 — Bring in your vendors
 
 Your vendor list from the old software is already in this project, under
-`data/vendors/`. In the app, go to **Settings → Import vendors** and tap the
-button. All sixty come in with their phone numbers and cities; anything already
-there is skipped. That is the only step — no files to open, nothing to paste.
+`data/vendors/`, and it loads itself: the first time you open the app after
+deploying, all sixty vendors appear under **Vendors** with their phone numbers
+and cities. Nothing to open, nothing to paste, nothing to tap.
 
 ### Step 8 — Add your team
 

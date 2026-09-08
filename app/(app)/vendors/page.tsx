@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Store, Plus } from 'lucide-react'
 import { getVendorCategories, getVendors } from '@/lib/queries'
 import { createClient } from '@/lib/supabase/server'
+import { ensureSeedVendors } from '@/lib/seed-vendors'
 import { EmptyState } from '@/components/common/states'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -20,6 +21,8 @@ export default async function VendorsPage({
 }) {
   const params = await searchParams
   const supabase = await createClient()
+  // The list from the old software loads itself the first time this opens.
+  await ensureSeedVendors()
 
   const [vendors, categories, statsRes] = await Promise.all([
     getVendors(),

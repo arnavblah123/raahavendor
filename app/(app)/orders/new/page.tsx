@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ChevronLeft, Store } from 'lucide-react'
 import { getVendorCategories, getVendors } from '@/lib/queries'
 import { requireProfile } from '@/lib/auth'
+import { ensureSeedVendors } from '@/lib/seed-vendors'
 import { OrderForm } from '@/components/orders/order-form'
 import { EmptyState } from '@/components/common/states'
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,7 @@ export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Place order — Raaha' }
 
 export default async function NewOrderPage() {
+  await ensureSeedVendors()
   const [profile, vendors, categories] = await Promise.all([
     requireProfile(),
     getVendors({ activeOnly: true }),

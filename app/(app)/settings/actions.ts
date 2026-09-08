@@ -6,7 +6,7 @@ import { requireAdmin } from '@/lib/auth'
 import { CHECKPOINT_PROFILE_KEYS, type Role } from '@/lib/constants'
 import type { ActionResult } from '@/app/(app)/actions'
 import { DEFAULT_PO_DETAILS, type PoDetails } from '@/lib/po'
-import seedVendors from '@/data/vendors/vendors.json'
+import { ensureSeedVendors } from '@/lib/seed-vendors'
 
 function fail(error: string): { ok: false; error: string } {
   return { ok: false, error }
@@ -163,55 +163,16 @@ export async function setUserActive(userId: string, isActive: boolean): Promise<
   }
 }
 
-/**
- * Load the vendor list carried over from the old software (data/vendors/).
- * One tap in Settings; needs no SQL. Names already in the app are skipped,
- * so it is safe to press more than once.
- */
-export async function importSeedVendors(): Promise<
-  ActionResult<{ added: number; skipped: number }>
-> {
+/** The Settings button: same code path as the automatic load. */
+export async function importSeedVendors(): Promise<ActionResult<{ added: number; skipped: number }>> {
   try {
-    const admin = await requireAdmin()
-    const supabase = await createClient()
-
-    const { data: existing, error: readErr } = await supabase.from('vendors').select('name')
-    if (readErr) return fail(readErr.message)
-    const have = new Set((existing ?? []).map((v) => v.name.trim().toLowerCase()))
-
-    const { data: cats } = await supabase.from('vendor_categories').select('slug')
-    const knownCategories = new Set((cats ?? []).map((c) => c.slug))
-
-    const rows = seedVendors
-      .filter((v) => v.name && !have.has(v.name.trim().toLowerCase()))
-      .map((v) => ({
-        name: v.name.trim(),
-        category: knownCategories.has(v.category ?? '') ? v.category : 'other',
-        phone: v.phone ?? null,
-        email: v.email ?? null,
-        city: v.city ?? null,
-        notes: v.notes ?? null,
-        created_by: admin.id,
-      }))
-
-    if (rows.length > 0) {
-      const { error } = await supabase.from('vendors').insert(rows)
-      if (error) return fail(error.message)
-    }
-
+    await requireAdmin()
+    const result = await ensureSeedVendors()
     revalidatePath('/settings')
     revalidatePath('/vendors')
     revalidatePath('/orders/new')
-    return { ok: true, added: rows.length, skipped: seedVendors.length - rows.length }
+    return { ok: true, ...result }
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Something went wrong.')
   }
-}
-
-/** How many of the carried-over vendors are not yet in the app. */
-export async function countPendingSeedVendors(): Promise<number> {
-  const supabase = await createClient()
-  const { data } = await supabase.from('vendors').select('name')
-  const have = new Set((data ?? []).map((v) => v.name.trim().toLowerCase()))
-  return seedVendors.filter((v) => v.name && !have.has(v.name.trim().toLowerCase())).length
 }

@@ -6,7 +6,7 @@ import { SettingsForm } from '@/components/settings/settings-form'
 import { VendorImport } from '@/components/settings/vendor-import'
 import { PoDetailsForm } from '@/components/settings/po-details-form'
 import { resolvePoDetails } from '@/lib/po'
-import { countPendingSeedVendors } from '@/app/(app)/settings/actions'
+import { countPendingSeedVendors, ensureSeedVendors } from '@/lib/seed-vendors'
 import { DEFAULT_WHATSAPP_TEMPLATE, CHECKPOINT_PROFILES } from '@/lib/constants'
 import type { Profile } from '@/lib/types'
 
@@ -19,6 +19,7 @@ export default async function SettingsPage() {
   if (!profile || profile.role !== 'admin') redirect('/')
 
   const supabase = await createClient()
+  await ensureSeedVendors()
   const [settings, categoriesRes, profilesRes, pendingVendors] = await Promise.all([
     getSettings(),
     supabase.from('vendor_categories').select('*').order('sort_order'),
