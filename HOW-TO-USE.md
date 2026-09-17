@@ -102,9 +102,10 @@ Tap **Add** at the bottom of the screen.
 6. **Items** — one row per design. Put the design code in if you have it, it
    makes searching much easier later. **Count in pieces or sets** — this is for
    finished garments, never for fabric by the metre.
-7. **For every piece, add a photo.** Tap *Add a photo of the piece* — it opens
-   the camera, or you can pick one from the gallery. Photograph the design,
-   the sample or the reference picture. This photo goes on the purchase order
+7. **For every piece, add a photo.** Tap **Take photo** to use the camera, or
+   **Gallery / files** to pick a picture already on your phone — a screenshot,
+   a photo the vendor sent on WhatsApp, anything in your gallery. Photograph
+   or pick the design, the sample or the reference picture. This photo goes on the purchase order
    and is what the goods are checked against when they arrive.
 8. **If the vendor is making it to size, tick *This piece is made to
    measurements*** and enter them. Tap the grey chips (Bust, Waist, Length…)

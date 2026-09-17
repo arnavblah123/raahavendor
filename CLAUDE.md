@@ -14,6 +14,10 @@ HTML, SQL or CSV files on their own machine. So:
 - **Data carried over from the old software lives in `data/`** (see
   `data/vendors/`), in JSON that the app can read, plus a CSV that GitHub
   renders as a table so the owner can check it in the browser.
+- **Every photo field offers both the camera and the gallery/files.** A
+  file input with `capture` forces the camera on phones and hides the photo
+  picker, so use two inputs (one with `capture`, one without) behind two
+  buttons. `components/orders/photo-field.tsx` is the pattern to reuse.
 - Keep the plain-language docs (`README.md`, `HOW-TO-USE.md`) current when a
   screen changes. The owner and staff read those, not the code.
 
