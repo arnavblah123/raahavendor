@@ -4,7 +4,7 @@ import { SUPABASE_KEY, SUPABASE_URL, assertSupabaseEnv } from './env'
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions }
 
-const PUBLIC_PATHS = ['/login', '/auth']
+const PUBLIC_PATHS = ['/login', '/auth', '/reset-password']
 
 /**
  * Refreshes the auth session on every request and bounces anonymous
