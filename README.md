@@ -158,14 +158,19 @@ deploys automatically.
 
 #### After the first deploy
 
-In Supabase, go to **Authentication → URL Configuration** and set **Site URL**
-to your new Vercel address. Nothing breaks if you skip it today — the app signs
-in with a password and never sends a link — but it matters the day you want
-password-reset emails to work.
+**Do this one, it matters.** In Supabase, go to **Authentication → URL
+Configuration** and set **Site URL** to your new Vercel address, for example
+`https://raahavendor.vercel.app` (no slash at the end). Click Save.
 
-> **Forgotten passwords** are reset by you, in Supabase under
-> **Authentication → Users → … → Reset password**. There is deliberately no
-> "forgot password" link in the app.
+This is where password-reset emails send people. Until you set it, every reset
+link points at `http://localhost:3000`, which opens nothing on a phone — the
+email arrives but the link goes nowhere.
+
+> **Forgotten passwords:** tap **Forgot password?** on the sign-in screen,
+> enter the email, open the link in the email, and choose a new password. A
+> reset sent from Supabase under **Authentication → Users → … → Send password
+> recovery** lands in the same place. Either way the Site URL above must be
+> set first.
 
 ### Step 7 — Bring in your vendors
 

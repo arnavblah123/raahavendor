@@ -280,6 +280,11 @@ Tick *Flag a problem for the owner* on that piece and write it down. A flag
 does not need a measurement difference — damage, colour and fabric problems
 count just as much.
 
+**I forgot my password.**
+On the sign-in screen tap **Forgot password?**, enter your email, and open the
+link that arrives. It takes you straight to a screen to choose a new password
+and signs you in. The link works once and expires after an hour.
+
 **I entered something wrong.**
 Open the order and fix it. If you need to change the original promised date or
 delete something, ask Archana — only an admin can do those.
