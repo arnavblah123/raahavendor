@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Camera, ImagePlus, Loader2, Trash2 } from 'lucide-react'
+import { Camera, Images, Loader2, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { PHOTO_BUCKET } from '@/lib/constants'
 import { newPhotoPath, PHOTO_ACCEPT, PHOTO_MAX_BYTES, resizeImage } from '@/lib/images'
@@ -10,9 +10,13 @@ import { cn } from '@/lib/utils'
 /**
  * One photo of the piece being ordered.
  *
+ * Two ways in, always: take a photo now, or pick one already on the phone
+ * (gallery, Files, WhatsApp downloads). A single input with `capture` would
+ * force the camera and hide the gallery, so there are two inputs.
+ *
  * The photo is shrunk on the phone and uploaded straight to the private
  * storage bucket while the user carries on filling in the form; only the
- * storage path travels with the order. On a phone the camera opens directly.
+ * storage path travels with the order.
  */
 export function PhotoField({
   value,
@@ -25,7 +29,8 @@ export function PhotoField({
   label?: string
   className?: string
 }) {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
+  const galleryRef = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -37,7 +42,8 @@ export function PhotoField({
     }
   }, [preview])
 
-  async function handleFile(file: File | undefined) {
+  async function handleFile(input: HTMLInputElement) {
+    const file = input.files?.[0]
     if (!file) return
     setError(null)
     setUploading(true)
@@ -70,7 +76,7 @@ export function PhotoField({
       setError(e instanceof Error ? e.message : 'Could not read that photo.')
     } finally {
       setUploading(false)
-      if (inputRef.current) inputRef.current.value = ''
+      input.value = ''
     }
   }
 
@@ -87,18 +93,31 @@ export function PhotoField({
     }
   }
 
+  const pickButton =
+    'flex min-h-[56px] flex-1 items-center justify-center gap-2 rounded-md border px-3 text-[14px] font-medium disabled:opacity-60'
+
   return (
     <div className={cn('space-y-1.5', className)}>
       <span className="block text-[13px] font-medium text-ink">{label}</span>
 
+      {/* Camera: `capture` makes the phone open the camera straight away. */}
       <input
-        ref={inputRef}
+        ref={cameraRef}
         type="file"
         accept={PHOTO_ACCEPT}
         capture="environment"
         className="sr-only"
-        onChange={(e) => handleFile(e.target.files?.[0])}
-        aria-label={label}
+        onChange={(e) => handleFile(e.currentTarget)}
+        aria-label={`${label} — take a photo`}
+      />
+      {/* Gallery / files: no `capture`, so the phone offers its photo picker. */}
+      <input
+        ref={galleryRef}
+        type="file"
+        accept={PHOTO_ACCEPT}
+        className="sr-only"
+        onChange={(e) => handleFile(e.currentTarget)}
+        aria-label={`${label} — choose from gallery or files`}
       />
 
       {value && preview ? (
@@ -111,13 +130,22 @@ export function PhotoField({
           />
           <div className="min-w-0 flex-1 space-y-1.5">
             <p className="text-[12px] text-done">Photo attached.</p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => inputRef.current?.click()}
-                className="min-h-9 rounded-md border border-line bg-white px-3 text-[13px] font-medium text-charcoal hover:bg-parchment"
+                onClick={() => cameraRef.current?.click()}
+                className="inline-flex min-h-9 items-center gap-1 rounded-md border border-line bg-white px-3 text-[13px] font-medium text-charcoal hover:bg-parchment"
               >
+                <Camera className="size-4" />
                 Retake
+              </button>
+              <button
+                type="button"
+                onClick={() => galleryRef.current?.click()}
+                className="inline-flex min-h-9 items-center gap-1 rounded-md border border-line bg-white px-3 text-[13px] font-medium text-charcoal hover:bg-parchment"
+              >
+                <Images className="size-4" />
+                Choose another
               </button>
               <button
                 type="button"
@@ -130,32 +158,36 @@ export function PhotoField({
             </div>
           </div>
         </div>
+      ) : uploading ? (
+        <div className="flex min-h-[56px] items-center justify-center gap-2 rounded-md border border-dashed border-gold/50 bg-gold-wash/40 text-[14px] font-medium text-charcoal">
+          <Loader2 className="size-5 animate-spin text-gold" />
+          Uploading…
+        </div>
       ) : (
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={uploading}
-          className={cn(
-            'flex min-h-[64px] w-full items-center gap-3 rounded-md border border-dashed px-3 py-2 text-left',
-            'border-gold/50 bg-gold-wash/40 text-charcoal hover:bg-gold-wash disabled:opacity-60',
-          )}
-        >
-          {uploading ? (
-            <Loader2 className="size-5 shrink-0 animate-spin text-gold" />
-          ) : (
-            <Camera className="size-5 shrink-0 text-gold" />
-          )}
-          <span className="min-w-0">
-            <span className="block text-[14px] font-medium">
-              {uploading ? 'Uploading…' : 'Add a photo of the piece'}
-            </span>
-            <span className="block text-[12px] text-muted">
-              Take one now or pick from the gallery. It goes on the PO and is used to check the goods
-              when they arrive.
-            </span>
-          </span>
-          {!uploading && <ImagePlus className="ml-auto size-4 shrink-0 text-muted" />}
-        </button>
+        <div className="space-y-1.5">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => cameraRef.current?.click()}
+              className={cn(pickButton, 'border-gold/50 bg-gold-wash/40 text-charcoal hover:bg-gold-wash')}
+            >
+              <Camera className="size-5 text-gold" />
+              Take photo
+            </button>
+            <button
+              type="button"
+              onClick={() => galleryRef.current?.click()}
+              className={cn(pickButton, 'border-line bg-white text-charcoal hover:bg-parchment')}
+            >
+              <Images className="size-5 text-gold" />
+              Gallery / files
+            </button>
+          </div>
+          <p className="text-[12px] text-muted">
+            The design, the sample, or a picture the vendor sent on WhatsApp. It goes on the PO and is
+            used to check the goods when they arrive.
+          </p>
+        </div>
       )}
 
       {error && <p className="text-[12px] text-overdue">{error}</p>}
