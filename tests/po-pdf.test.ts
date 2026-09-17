@@ -8,7 +8,7 @@ describe('PO PDF', () => {
       poNo: 'PO/2026-27/0001', poDate: '08 Sep 2026', expectedDate: '23 Oct 2026',
       orderNo: 'RAAHA-ORD-0005', orderDate: '08 Sep 2026',
       from: { company_name: 'NB TEXTILE', tagline: 'Raaha by Archana Bansal', address: '12 Park Street\nKolkata 700016', phone: '+91 98300 00000', email: 'orders@nbtextile.in', gstin: '19ABCDE1234F1Z5', signatory: 'Authorised signatory' },
-      vendor: { name: 'Shyam Fabrics', company_name: null, contact_person: 'Ramesh', city: 'Kolkata', phone: '+919812345678', gst_no: null },
+      vendor: { name: 'Shyam Fabrics', company_name: null, contact_person: 'Ramesh', address: '12 Park Street', city: 'Kolkata 700016, West Bengal', phone: '+919812345678', email: null, gst_no: null },
       lines: [
         { n: 1, product_name: 'Bridal Lehenga', design_code: 'BL-101', category: 'Lehenga', details: 'Red · M', measurements: 'Waist 30 · Skirt length 42 in', quantity: 2, unit: 'pcs', rate: 20000, amount: 40000, photoUrl: 'https://example.invalid/x.jpg' },
         { n: 2, product_name: 'Anarkali', design_code: null, category: 'Anarkali', details: '', measurements: '', quantity: 3, unit: 'pcs', rate: null, amount: null, photoUrl: null },

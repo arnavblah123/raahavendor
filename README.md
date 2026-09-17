@@ -36,6 +36,9 @@ follow the steps in order.
    storage bucket the photos live in.
 6. Once more with `supabase/migrations/0003_po_details.sql`, which adds the
    space for your company details on the purchase order.
+7. And finally `supabase/migrations/0004_vendor_address.sql`, which adds
+   address, state and pincode to vendors and fills them in for the vendors
+   carried over from the old software.
 
 You should see *Success. No rows returned* each time. That is correct — it
 has just built all the tables, security rules, indexes and the photo bucket.
@@ -43,7 +46,8 @@ has just built all the tables, security rules, indexes and the photo bucket.
 You only ever do this once, in that order.
 
 > **Already running the app before purchase orders existed?** Just run
-> `0002_po_and_inward.sql` and `0003_po_details.sql` on your existing project. Nothing you have entered
+> `0002_po_and_inward.sql`, `0003_po_details.sql` and `0004_vendor_address.sql`
+> on your existing project, in that order. Nothing you have entered
 > is touched. New orders are numbered `RAAHA-ORD-…` from now on so they cannot
 > be confused with purchase order numbers; old orders keep their numbers.
 

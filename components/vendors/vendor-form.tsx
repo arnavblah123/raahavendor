@@ -38,6 +38,9 @@ export function VendorForm({
     alt_phone: vendor?.alt_phone ?? '',
     email: vendor?.email ?? '',
     city: vendor?.city ?? '',
+    address: vendor?.address ?? '',
+    state: vendor?.state ?? '',
+    pincode: vendor?.pincode ?? '',
     gst_no: vendor?.gst_no ?? '',
     notes: vendor?.notes ?? '',
     payment_terms: paymentTerms ?? '',
@@ -61,7 +64,7 @@ export function VendorForm({
         return
       }
       if (onSaved) onSaved(res.id, form.name)
-      else router.push(`/vendors/${res.id}`)
+      else router.push(`/vendors/${res.id}?saved=1`)
       router.refresh()
     })
   }
@@ -120,9 +123,30 @@ export function VendorForm({
       </FieldGroup>
 
       {!compact && (
+        <FieldGroup title="Address" description="Printed on the purchase order under the vendor's name.">
+          <Field label="Street / area" hint="optional">
+            <Textarea
+              rows={2}
+              value={form.address}
+              onChange={set('address')}
+              placeholder="e.g. 10 Bhoomi Plaza, Masjid Galli, Dadar West"
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="State" hint="optional">
+              <Input value={form.state} onChange={set('state')} placeholder="e.g. West Bengal" />
+            </Field>
+            <Field label="Pincode" hint="optional">
+              <Input inputMode="numeric" value={form.pincode} onChange={set('pincode')} placeholder="700016" />
+            </Field>
+          </div>
+        </FieldGroup>
+      )}
+
+      {!compact && (
         <FieldGroup title="Other details">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Email" hint="optional">
+            <Field label="Email" hint="optional — used by Send PO by email">
               <Input type="email" value={form.email} onChange={set('email')} />
             </Field>
             <Field label="GST number" hint="optional">

@@ -36,11 +36,20 @@ export const ensureSeedVendors = cache(async (): Promise<{ added: number; skippe
     phone: v.phone ?? null,
     email: v.email ?? null,
     city: v.city ?? null,
+    address: v.address ?? null,
+    state: v.state ?? null,
+    pincode: v.pincode ?? null,
     notes: v.notes ?? null,
     created_by: profile.id,
   }))
 
-  const { error } = await supabase.from('vendors').insert(rows)
+  let { error } = await supabase.from('vendors').insert(rows)
+  // Before migration 0004 the address columns do not exist: insert without them.
+  if (error && /column|schema cache/i.test(error.message)) {
+    ;({ error } = await supabase
+      .from('vendors')
+      .insert(rows.map(({ address: _a, state: _s, pincode: _p, ...r }) => r)))
+  }
   if (error) return { added: 0, skipped: seedVendors.length }
 
   return { added: rows.length, skipped: seedVendors.length - rows.length }

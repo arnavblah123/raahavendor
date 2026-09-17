@@ -37,6 +37,10 @@ export interface Vendor {
   alt_phone: string | null
   email: string | null
   city: string | null
+  /** Street / area. Absent until migration 0004 has been run. */
+  address?: string | null
+  state?: string | null
+  pincode?: string | null
   gst_no: string | null
   notes: string | null
   is_active: boolean
