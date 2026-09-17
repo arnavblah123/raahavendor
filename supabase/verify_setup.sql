@@ -1,8 +1,8 @@
 -- =====================================================================
---  Check that migrations 0001, 0002 and 0003 installed correctly.
+--  Check that migrations 0001 to 0004 installed correctly.
 --
 --  Paste this into the Supabase SQL Editor and press Run, AFTER running
---  all three migrations. Every row should say OK.
+--  all four migrations. Every row should say OK.
 --
 --  Safe to run any time — it only reads, it changes nothing.
 -- =====================================================================
@@ -47,6 +47,12 @@ select 'PO company details',
        case when count(*) = 1 then 'OK' else 'PROBLEM' end
 from information_schema.columns
 where table_schema = 'public' and table_name = 'app_settings' and column_name = 'po_details'
+union all
+select 'Vendor address columns',
+       case when count(*) = 3 then 'present' else 'run 0004_vendor_address.sql' end,
+       case when count(*) = 3 then 'OK' else 'PROBLEM' end
+from information_schema.columns
+where table_schema = 'public' and table_name = 'vendors' and column_name in ('address','state','pincode')
 union all
 select 'Photo storage bucket',
        case when count(*) = 1 then 'order-photos (private)' else 'missing' end,

@@ -178,6 +178,16 @@ if (pod.json?.code === '42703' || /po_details/.test(pod.json?.message || '')) {
   ok('Purchase order company details are set up')
 }
 
+// --- 5c. Did migration 0004 run? ---------------------------------------------
+const va = await get('/rest/v1/vendors?select=address,state,pincode&limit=1')
+if (va.json?.code === '42703' || /address|pincode/.test(va.json?.message || '')) {
+  bad('Migration 0004 has not been run',
+      'Paste supabase/migrations/0004_vendor_address.sql into the Supabase SQL Editor and press Run.\n      It adds address, state and pincode to vendors.')
+  failed = true
+} else if (va.json?.code !== '42P01') {
+  ok('Vendor address columns are set up')
+}
+
 // --- 6. Reference data seeded? ---------------------------------------------
 const settings = await get('/rest/v1/app_settings?select=id&limit=1')
 if (settings.json?.code === '42P01') {

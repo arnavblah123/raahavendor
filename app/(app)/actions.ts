@@ -675,10 +675,20 @@ export interface VendorInput {
   alt_phone?: string
   email?: string
   city?: string
+  address?: string
+  state?: string
+  pincode?: string
   gst_no?: string
   notes?: string
   payment_terms?: string
   is_active?: boolean
+}
+
+/** The columns migration 0004 adds. Stripped and retried if it has not run. */
+const VENDOR_ADDRESS_COLUMNS = ['address', 'state', 'pincode'] as const
+
+function isMissingColumn(message: string, columns: readonly string[]): boolean {
+  return /column|schema cache/i.test(message) && columns.some((c) => message.includes(c))
 }
 
 export async function saveVendor(input: VendorInput): Promise<ActionResult<{ id: string }>> {
@@ -697,6 +707,9 @@ export async function saveVendor(input: VendorInput): Promise<ActionResult<{ id:
       alt_phone: input.alt_phone?.trim() || null,
       email: input.email?.trim() || null,
       city: input.city?.trim() || null,
+      address: input.address?.trim() || null,
+      state: input.state?.trim() || null,
+      pincode: input.pincode?.trim() || null,
       gst_no: input.gst_no?.trim() || null,
       notes: input.notes?.trim() || null,
       ...(input.is_active === undefined ? {} : { is_active: input.is_active }),
@@ -704,17 +717,35 @@ export async function saveVendor(input: VendorInput): Promise<ActionResult<{ id:
 
     let vendorId = input.id
 
+    // Without migration 0004 the address columns do not exist yet; save the
+    // rest rather than losing the whole edit.
+    const withoutAddress = () => {
+      const copy: Record<string, unknown> = { ...row }
+      for (const c of VENDOR_ADDRESS_COLUMNS) delete copy[c]
+      return copy
+    }
+
     if (vendorId) {
-      const { error } = await supabase.from('vendors').update(row).eq('id', vendorId)
+      let { error } = await supabase.from('vendors').update(row).eq('id', vendorId)
+      if (error && isMissingColumn(error.message, VENDOR_ADDRESS_COLUMNS)) {
+        ;({ error } = await supabase.from('vendors').update(withoutAddress()).eq('id', vendorId))
+      }
       if (error) return fail(error.message)
     } else {
-      const { data, error } = await supabase
+      let res = await supabase
         .from('vendors')
         .insert({ ...row, created_by: profile.id })
         .select('id')
         .single()
-      if (error) return fail(error.message)
-      vendorId = data.id
+      if (res.error && isMissingColumn(res.error.message, VENDOR_ADDRESS_COLUMNS)) {
+        res = await supabase
+          .from('vendors')
+          .insert({ ...withoutAddress(), created_by: profile.id })
+          .select('id')
+          .single()
+      }
+      if (res.error) return fail(res.error.message)
+      vendorId = res.data.id
     }
 
     // Payment terms are admin-only; RLS would reject this for staff, so we

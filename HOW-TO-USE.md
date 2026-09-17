@@ -242,6 +242,17 @@ pattern.
 
 This page is what to open before renegotiating with a vendor.
 
+### Changing a vendor's details
+
+Tap **Edit** next to the vendor's name. Everything is on one screen: name,
+company, type, contact person, phone numbers, email, address, state, pincode,
+GST number and notes. Press **Save changes**. The phone number is what Call and
+WhatsApp use, the email is what *Send PO by email* uses, and the address prints
+on the purchase order — so keeping these right pays off straight away.
+
+To add a vendor who is not in the list, tap **Vendors → New**. When placing an
+order you can also tap **New** next to the vendor dropdown.
+
 ---
 
 ## A few rules that keep this working

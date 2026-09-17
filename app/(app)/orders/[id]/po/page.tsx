@@ -84,8 +84,12 @@ export default async function PurchaseOrderPage({ params }: { params: Promise<{ 
       name: vendor?.name ?? '—',
       company_name: vendor?.company_name ?? null,
       contact_person: vendor?.contact_person ?? null,
-      city: vendor?.city ?? null,
+      address: vendor?.address ?? null,
+      city: [[vendor?.city, vendor?.pincode].filter(Boolean).join(' '), vendor?.state]
+        .filter(Boolean)
+        .join(', ') || null,
       phone: vendor?.phone ?? null,
+      email: vendor?.email ?? null,
       gst_no: vendor?.gst_no ?? null,
     },
     lines: lines.map((l, idx) => {
@@ -169,8 +173,16 @@ export default async function PurchaseOrderPage({ params }: { params: Promise<{ 
             {vendor?.contact_person && (
               <p className="text-[13px] text-ink">Attn: {vendor.contact_person}</p>
             )}
-            {vendor?.city && <p className="text-[13px] text-ink">{vendor.city}</p>}
+            {vendor?.address && <p className="whitespace-pre-line text-[13px] text-ink">{vendor.address}</p>}
+            {(vendor?.city || vendor?.pincode || vendor?.state) && (
+              <p className="text-[13px] text-ink">
+                {[[vendor?.city, vendor?.pincode].filter(Boolean).join(' '), vendor?.state]
+                  .filter(Boolean)
+                  .join(', ')}
+              </p>
+            )}
             {vendor?.phone && <p className="text-[13px] text-ink">{vendor.phone}</p>}
+            {vendor?.email && <p className="text-[13px] text-ink">{vendor.email}</p>}
             {vendor?.gst_no && <p className="text-[13px] text-ink">GSTIN {vendor.gst_no}</p>}
           </div>
           <div className="sm:text-right">

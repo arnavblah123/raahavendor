@@ -1,12 +1,12 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronLeft, MessageCircle, Phone, TriangleAlert } from 'lucide-react'
+import { ChevronLeft, Mail, MessageCircle, Pencil, Phone, TriangleAlert } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/server'
 import { getVendorCategories } from '@/lib/queries'
 import { isAdmin } from '@/lib/auth'
 import { buildScorecard, dragsTheBalance, GRADE_DESCRIPTION } from '@/lib/scorecard'
 import { GradeBadge } from '@/components/vendors/grade-badge'
-import { VendorForm } from '@/components/vendors/vendor-form'
 import { StageBadge, RevisionBadge, Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/common/states'
 import { formatDate, todayIST } from '@/lib/dates'
@@ -16,8 +16,15 @@ import type { Order, Vendor, VendorFinance, VendorStats } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
-export default async function VendorPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function VendorPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ saved?: string }>
+}) {
   const { id } = await params
+  const query = await searchParams
   const supabase = await createClient()
   const today = todayIST()
 
@@ -87,10 +94,24 @@ export default async function VendorPage({ params }: { params: Promise<{ id: str
         </Link>
       </div>
 
+      {query.saved && (
+        <p className="rounded-lg border border-done/40 bg-done-wash px-3.5 py-2.5 text-[13px] text-charcoal">
+          <span className="font-semibold text-done">Saved.</span> Vendor details updated.
+        </p>
+      )}
+
       <header className="card p-4 sm:p-5">
         <div className="flex items-start gap-4">
           <div className="min-w-0 flex-1">
-            <h1 className="font-serif text-3xl leading-tight text-charcoal">{vendor.name}</h1>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <h1 className="font-serif text-3xl leading-tight text-charcoal">{vendor.name}</h1>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/vendors/${vendor.id}/edit`}>
+                  <Pencil className="size-4" />
+                  Edit
+                </Link>
+              </Button>
+            </div>
             <p className="mt-1 text-[13px] text-muted">
               {[
                 categories.find((c) => c.slug === vendor.category)?.label ?? vendor.category,
@@ -103,6 +124,19 @@ export default async function VendorPage({ params }: { params: Promise<{ id: str
             {vendor.contact_person && (
               <p className="mt-0.5 text-[13px] text-ink">Contact: {vendor.contact_person}</p>
             )}
+            {(vendor.phone || vendor.alt_phone || vendor.email) && (
+              <p className="mt-0.5 text-[13px] text-ink">
+                {[vendor.phone, vendor.alt_phone, vendor.email].filter(Boolean).join(' · ')}
+              </p>
+            )}
+            {(vendor.address || vendor.pincode || vendor.state) && (
+              <p className="mt-0.5 text-[13px] text-muted">
+                {[vendor.address, [vendor.city, vendor.pincode].filter(Boolean).join(' '), vendor.state]
+                  .filter(Boolean)
+                  .join(', ')}
+              </p>
+            )}
+            {vendor.gst_no && <p className="mt-0.5 text-[12px] text-muted">GSTIN {vendor.gst_no}</p>}
             {admin && finance?.payment_terms && (
               <p className="mt-1.5 text-[13px] text-ink">
                 <span className="text-muted">Payment terms:</span> {finance.payment_terms}
@@ -124,7 +158,7 @@ export default async function VendorPage({ params }: { params: Promise<{ id: str
           <p className="mt-3 text-[13px] text-ink">{GRADE_DESCRIPTION[card.grade]}</p>
         )}
 
-        {(tel || wa) && (
+        {(tel || wa || vendor.email) && (
           <div className="mt-4 flex gap-2">
             {tel && (
               <a
@@ -144,6 +178,15 @@ export default async function VendorPage({ params }: { params: Promise<{ id: str
               >
                 <MessageCircle className="size-4" />
                 WhatsApp
+              </a>
+            )}
+            {vendor.email && (
+              <a
+                href={`mailto:${vendor.email}`}
+                className="tap flex-1 gap-1.5 rounded-md border border-line bg-white text-[13px] font-medium text-charcoal hover:bg-parchment"
+              >
+                <Mail className="size-4" />
+                Email
               </a>
             )}
           </div>
@@ -187,19 +230,14 @@ export default async function VendorPage({ params }: { params: Promise<{ id: str
       <OrderList title={`Open orders (${open.length})`} orders={open} today={today} empty="No open orders with this vendor." />
       <OrderList title={`Past orders (${past.length})`} orders={past} today={today} empty="No completed orders yet." />
 
-      <details className="group">
-        <summary className="cursor-pointer list-none text-[13px] font-semibold uppercase tracking-[0.08em] text-muted hover:text-charcoal">
-          Edit vendor details
-        </summary>
-        <div className="mt-3">
-          <VendorForm
-            vendor={vendor}
-            categories={categories}
-            isAdmin={admin}
-            paymentTerms={finance?.payment_terms ?? ''}
-          />
-        </div>
-      </details>
+      <div className="flex justify-center">
+        <Button asChild variant="outline">
+          <Link href={`/vendors/${vendor.id}/edit`}>
+            <Pencil className="size-4" />
+            Edit vendor details
+          </Link>
+        </Button>
+      </div>
     </div>
   )
 }

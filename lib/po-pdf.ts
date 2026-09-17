@@ -45,8 +45,11 @@ export interface PoPdfInput {
     name: string
     company_name: string | null
     contact_person: string | null
+    address: string | null
+    /** "Kolkata 700016, West Bengal" — already joined. */
     city: string | null
     phone: string | null
+    email: string | null
     gst_no: string | null
   }
   lines: PoPdfLine[]
@@ -159,8 +162,10 @@ export async function buildPoPdf(input: PoPdfInput): Promise<Blob> {
   const toLines = [
     input.vendor.company_name,
     input.vendor.contact_person ? `Attn: ${input.vendor.contact_person}` : null,
+    ...(input.vendor.address ? input.vendor.address.split(/\r?\n/) : []),
     input.vendor.city,
     input.vendor.phone,
+    input.vendor.email,
     input.vendor.gst_no ? `GSTIN ${input.vendor.gst_no}` : null,
   ].filter((v): v is string => !!v)
   for (const line of toLines) {
