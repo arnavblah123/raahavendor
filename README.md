@@ -306,6 +306,9 @@ and picks pieces off the rail. **Shop visits** (the bag icon on a phone,
 - The list **saves itself** a moment after every change, and photos upload
   the instant they are taken, so a dropped signal costs seconds, not the
   visit.
+- **Send list** builds a PDF of the pieces with their photos (never prices)
+  and hands it to WhatsApp or email through the share sheet, exactly as the
+  PO is sent, so the vendor can confirm what is set aside before the order.
 - **Make an order from this list** opens the normal Place order screen with
   every piece and its photo already filled in. Add the lead time, place the
   order, raise the PO — the list is then marked *Ordered* and frozen, and the
@@ -319,6 +322,10 @@ What it looks like on a phone (sample data):
 | The list, as the owner sees it | The same list, as staff see it |
 |---|---|
 | ![Purchase list builder, admin view](docs/screenshots/purchase-lists/2-builder-admin.png) | ![Purchase list builder, staff view](docs/screenshots/purchase-lists/3-builder-staff.png) |
+
+| Sending the list to the vendor | The PDF the vendor receives |
+|---|---|
+| ![Send list button](docs/screenshots/purchase-lists/9-send-list.png) | ![The list as a PDF](docs/screenshots/purchase-lists/list-pdf.png) |
 
 | All lists | Placing the order from a list | A list that became an order |
 |---|---|---|
@@ -364,6 +371,7 @@ lib/
   scorecard.ts        vendor grading and fill rate — also pure
   measurements.ts     ordered-vs-measured comparison and flagging — pure, tested
   po.ts               financial-year PO numbering and the PO WhatsApp text
+  list-pdf.ts         the purchase list as a PDF to send to the vendor
   images.ts           shrinks a phone photo before upload
   photo-upload.ts     the upload itself, shared by the order form and purchase lists
   dates.ts            calendar dates in IST (never the server's timezone)

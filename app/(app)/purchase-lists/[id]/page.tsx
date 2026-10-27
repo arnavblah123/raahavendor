@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
-import { getPurchaseList, getVendorCategories, getVendors } from '@/lib/queries'
+import { getPurchaseList, getSettings, getVendorCategories, getVendors } from '@/lib/queries'
+import { resolvePoDetails } from '@/lib/po'
 import { requireProfile } from '@/lib/auth'
 import { ListBuilder } from '@/components/purchase-lists/list-builder'
 import { ListSummary } from '@/components/purchase-lists/list-summary'
@@ -14,13 +15,16 @@ export default async function PurchaseListPage({ params }: { params: Promise<{ i
   const profile = await requireProfile()
   const isAdmin = profile.role === 'admin'
 
-  const [detail, vendors, categories] = await Promise.all([
+  const [detail, vendors, categories, settings] = await Promise.all([
     getPurchaseList(id, { isAdmin }),
     getVendors(),
     getVendorCategories(),
+    getSettings(),
   ])
   if (!detail) notFound()
   const { list, photoUrls, rates } = detail
+  const po = resolvePoDetails(settings?.po_details)
+  const from = { company_name: po.company_name, tagline: po.tagline, phone: po.phone }
 
   return (
     <div className="space-y-5">
@@ -49,9 +53,17 @@ export default async function PurchaseListPage({ params }: { params: Promise<{ i
           vendors={vendors}
           categories={categories}
           isAdmin={isAdmin}
+          from={from}
         />
       ) : (
-        <ListSummary list={list} photoUrls={photoUrls} rates={rates} isAdmin={isAdmin} />
+        <ListSummary
+          list={list}
+          photoUrls={photoUrls}
+          rates={rates}
+          isAdmin={isAdmin}
+          vendor={vendors.find((v) => v.id === list.vendor_id) ?? null}
+          from={from}
+        />
       )}
     </div>
   )

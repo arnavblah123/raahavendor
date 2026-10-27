@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/dates'
 import { formatMoney } from '@/lib/money'
 import { PRODUCT_CATEGORY_LABELS } from '@/lib/constants'
-import type { PurchaseListWithContext } from '@/lib/types'
+import { ListShareActions } from '@/components/purchase-lists/list-share-actions'
+import type { ListPdfInput } from '@/lib/list-pdf'
+import type { PurchaseListWithContext, Vendor } from '@/lib/types'
 
 /**
  * A list that has already become an order. Read-only: the order is now the
@@ -16,17 +18,44 @@ export function ListSummary({
   photoUrls,
   rates,
   isAdmin,
+  vendor,
+  from,
 }: {
   list: PurchaseListWithContext
   photoUrls: Record<string, string>
   rates: Record<string, number | null>
   isAdmin: boolean
+  vendor: Vendor | null
+  from: ListPdfInput['from']
 }) {
   const items = list.purchase_list_items
   const totalPcs = items.reduce((s, i) => s + i.quantity, 0)
   const knownTotal = isAdmin
     ? items.reduce((s, i) => s + i.quantity * (rates[i.id] ?? 0), 0)
     : 0
+
+  const pdfInput: ListPdfInput = {
+    from,
+    vendor: {
+      name: list.vendor?.name ?? 'Vendor',
+      company_name: list.vendor?.company_name ?? null,
+      contact_person: vendor?.contact_person ?? null,
+      city: list.vendor?.city ?? null,
+    },
+    visitDate: formatDate(list.visit_date),
+    notes: list.notes,
+    pieces: items.map((i, idx) => ({
+      n: idx + 1,
+      product_name: i.product_name || `Piece ${idx + 1}`,
+      design_code: i.design_code,
+      colour: i.colour,
+      category: PRODUCT_CATEGORY_LABELS[i.category],
+      quantity: i.quantity,
+      unit: i.unit,
+      notes: i.notes,
+      photoUrl: i.photo_path ? (photoUrls[i.photo_path] ?? null) : null,
+    })),
+  }
 
   return (
     <div className="space-y-4">
@@ -97,6 +126,14 @@ export function ListSummary({
           })}
         </ol>
       </section>
+
+      <div className="card p-4 sm:p-5">
+        <ListShareActions
+          input={pdfInput}
+          vendorPhone={vendor?.phone ?? null}
+          vendorEmail={vendor?.email ?? null}
+        />
+      </div>
 
       <p className="text-[12px] text-muted">
         Visited {formatDate(list.visit_date)}

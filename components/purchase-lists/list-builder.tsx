@@ -19,13 +19,15 @@ import { Field, FieldGroup, Input, Select, Textarea } from '@/components/ui/fiel
 import { ErrorNote } from '@/components/common/states'
 import { Modal } from '@/components/ui/modal'
 import { VendorForm } from '@/components/vendors/vendor-form'
+import { ListShareActions } from '@/components/purchase-lists/list-share-actions'
 import { deletePurchaseList, savePurchaseList, type PurchaseListItemInput } from '@/app/(app)/actions'
-import { PRODUCT_CATEGORIES, PRODUCT_CATEGORY_LABELS, UNITS } from '@/lib/constants'
-import { todayIST } from '@/lib/dates'
+import { PRODUCT_CATEGORIES, PRODUCT_CATEGORY_LABELS, UNITS, type ProductCategory } from '@/lib/constants'
+import { formatDate, todayIST } from '@/lib/dates'
 import { PHOTO_ACCEPT } from '@/lib/images'
 import { formatMoney } from '@/lib/money'
 import { removePhoto, uploadPhoto } from '@/lib/photo-upload'
 import { cn } from '@/lib/utils'
+import type { ListPdfInput } from '@/lib/list-pdf'
 import type { PurchaseListWithContext, Vendor } from '@/lib/types'
 
 /**
@@ -100,6 +102,7 @@ export function ListBuilder({
   categories,
   isAdmin,
   defaultVendorId,
+  from,
 }: {
   list: PurchaseListWithContext | null
   photoUrls: Record<string, string>
@@ -109,6 +112,8 @@ export function ListBuilder({
   categories: { slug: string; label: string }[]
   isAdmin: boolean
   defaultVendorId?: string
+  /** Who the list PDF is from — Settings → Purchase order details. */
+  from: ListPdfInput['from']
 }) {
   const router = useRouter()
   const cameraRef = useRef<HTMLInputElement>(null)
@@ -341,7 +346,34 @@ export function ListBuilder({
     })
   }
 
-  const vendorName = vendorList.find((v) => v.id === vendorId)?.name
+  const vendor = vendorList.find((v) => v.id === vendorId)
+  const vendorName = vendor?.name
+
+  /** What the PDF and the message need, from what is on screen right now. */
+  function pdfInput(): ListPdfInput {
+    return {
+      from,
+      vendor: {
+        name: vendor?.name ?? 'Vendor',
+        company_name: vendor?.company_name ?? null,
+        contact_person: vendor?.contact_person ?? null,
+        city: vendor?.city ?? null,
+      },
+      visitDate: formatDate(visitDate),
+      notes: notes.trim() || null,
+      pieces: pieces.map((p, i) => ({
+        n: i + 1,
+        product_name: p.product_name.trim() || `Piece ${i + 1}`,
+        design_code: p.design_code.trim() || null,
+        colour: p.colour.trim() || null,
+        category: PRODUCT_CATEGORY_LABELS[p.category as ProductCategory] ?? p.category,
+        quantity: Number(p.quantity) || 1,
+        unit: p.unit,
+        notes: p.notes.trim() || null,
+        photoUrl: p.preview,
+      })),
+    }
+  }
 
   return (
     <>
@@ -515,6 +547,14 @@ export function ListBuilder({
               Make an order from this list
             </Button>
           </div>
+          <ListShareActions
+            getInput={pdfInput}
+            vendorPhone={vendor?.phone ?? null}
+            vendorEmail={vendor?.email ?? null}
+            disabled={uploadsInFlight || pieces.length === 0 || !vendorId}
+            compact
+          />
+
           <p className="text-[12px] leading-relaxed text-muted">
             Making the order takes these pieces into the Place order screen, where you add the lead
             time and raise the purchase order{vendorName ? ` for ${vendorName}` : ''}. You can also

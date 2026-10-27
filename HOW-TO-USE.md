@@ -134,7 +134,11 @@ fill in the order form standing there. Use a **purchase list** instead.
    "price has been noted" tick — Archana sees the amounts.
 6. **More details** opens the type, unit, design code, colour and a note, for
    when you have a minute.
-7. When you are done — in the shop or later at ours — tap **Make an order from
+7. **Send list (WhatsApp / email)** sends the vendor a PDF of the pieces with
+   their photos, so they can confirm what has been set aside for us. It works
+   exactly like sending a PO: on a phone the share sheet opens with the PDF
+   attached, pick WhatsApp and the vendor's chat. No prices go on it.
+8. When you are done — in the shop or later at ours — tap **Make an order from
    this list**. The Place order screen opens with every piece and its photo
    already filled in. Add the lead time, place the order and raise the PO as
    usual.

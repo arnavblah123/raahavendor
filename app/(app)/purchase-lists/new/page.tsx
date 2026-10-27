@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ChevronLeft, Store } from 'lucide-react'
-import { getVendorCategories, getVendors } from '@/lib/queries'
+import { getSettings, getVendorCategories, getVendors } from '@/lib/queries'
+import { resolvePoDetails } from '@/lib/po'
 import { requireProfile } from '@/lib/auth'
 import { ensureSeedVendors } from '@/lib/seed-vendors'
 import { ListBuilder } from '@/components/purchase-lists/list-builder'
@@ -16,12 +17,15 @@ export default async function NewPurchaseListPage({
   searchParams: Promise<{ vendor?: string }>
 }) {
   await ensureSeedVendors()
-  const [query, profile, vendors, categories] = await Promise.all([
+  const [query, profile, vendors, categories, settings] = await Promise.all([
     searchParams,
     requireProfile(),
     getVendors({ activeOnly: true }),
     getVendorCategories(),
+    getSettings(),
   ])
+  const po = resolvePoDetails(settings?.po_details)
+  const from = { company_name: po.company_name, tagline: po.tagline, phone: po.phone }
 
   return (
     <div className="space-y-5">
@@ -59,6 +63,7 @@ export default async function NewPurchaseListPage({
           categories={categories}
           isAdmin={profile.role === 'admin'}
           defaultVendorId={query.vendor}
+          from={from}
         />
       )}
     </div>
