@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ChevronLeft, Ruler, Truck } from 'lucide-react'
-import { getInwardFinance, getOrderDetail, getSettings } from '@/lib/queries'
+import { getInwardFinance, getOrderDetail, getPurchaseListForOrder, getSettings } from '@/lib/queries'
 import { isAdmin } from '@/lib/auth'
 import { Badge, PartialBadge, RevisionBadge, StageBadge } from '@/components/ui/badge'
 import { OrderActions } from '@/components/orders/order-actions'
@@ -26,7 +26,12 @@ export default async function OrderDetailPage({
 }) {
   const { id } = await params
   const query = await searchParams
-  const [detail, settings, admin] = await Promise.all([getOrderDetail(id), getSettings(), isAdmin()])
+  const [detail, settings, admin, fromList] = await Promise.all([
+    getOrderDetail(id),
+    getSettings(),
+    isAdmin(),
+    getPurchaseListForOrder(id),
+  ])
 
   if (!detail) notFound()
 
@@ -106,6 +111,11 @@ export default async function OrderDetailPage({
           <RevisionBadge count={order.revision_count} />
           <PartialBadge dispatched={dispatchedPcs} total={ordered} />
           {purchaseOrder && <Badge tone="gold">{purchaseOrder.po_no}</Badge>}
+          {fromList && (
+            <Link href={`/purchase-lists/${fromList.id}`}>
+              <Badge tone="neutral">Picked in person · {formatDate(fromList.visit_date)}</Badge>
+            </Link>
+          )}
         </div>
 
         {/* The headline number: how late, or how long left. */}

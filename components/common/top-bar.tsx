@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { BarChart3, LogOut, PackageOpen, Settings } from 'lucide-react'
+import { BarChart3, LogOut, PackageOpen, Settings, ShoppingBag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 
@@ -10,6 +10,7 @@ const LINKS = [
   { href: '/', label: 'Today' },
   { href: '/orders', label: 'Orders' },
   { href: '/vendors', label: 'Vendors' },
+  { href: '/purchase-lists', label: 'Shop visits' },
   { href: '/inwards', label: 'Inwards' },
   { href: '/reports', label: 'Reports' },
 ]
@@ -54,6 +55,13 @@ export function TopBar({ name, isAdmin }: { name: string; isAdmin: boolean }) {
         </nav>
 
         <div className="ml-auto flex items-center gap-1">
+          <Link
+            href="/purchase-lists"
+            className="tap rounded-md text-muted hover:bg-parchment hover:text-charcoal md:hidden"
+            aria-label="Purchase lists from shop visits"
+          >
+            <ShoppingBag className="size-5" />
+          </Link>
           <Link
             href="/inwards"
             className="tap rounded-md text-muted hover:bg-parchment hover:text-charcoal md:hidden"
