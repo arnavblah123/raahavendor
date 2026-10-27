@@ -1,8 +1,9 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Camera, CalendarClock, Loader2, Plus, Ruler, Trash2, TriangleAlert } from 'lucide-react'
+import { Camera, CalendarClock, Loader2, Plus, Ruler, ShoppingBag, Trash2, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldGroup, Input, Select, Textarea } from '@/components/ui/field'
 import { ErrorNote } from '@/components/common/states'
@@ -33,6 +34,29 @@ interface ItemRow extends Omit<NewOrderItemInput, 'measurements' | 'measurement_
   measurementRows: MeasurementRow[]
   measurementUnit: MeasurementUnit
   photoPath: string | null
+  /** A signed link for a photo that already exists (from a purchase list). */
+  photoPreview?: string | null
+}
+
+/** What a purchase list hands over: the pieces, already photographed. */
+export interface OrderPrefill {
+  purchaseListId: string
+  vendorId: string
+  vendorName: string
+  visitDate: string
+  notes: string
+  items: {
+    product_name: string
+    design_code: string
+    colour: string
+    category: string
+    quantity: number
+    unit: string
+    photoPath: string | null
+    photoPreview: string | null
+    /** Admin only; null when unknown or for staff. */
+    rate: number | null
+  }[]
 }
 
 function blankItem(): ItemRow {
@@ -58,11 +82,14 @@ export function OrderForm({
   categories,
   isAdmin,
   defaultPlacedBy,
+  prefill,
 }: {
   vendors: Vendor[]
   categories: { slug: string; label: string }[]
   isAdmin: boolean
   defaultPlacedBy: string
+  /** Set when the order is being placed from a purchase list. */
+  prefill?: OrderPrefill | null
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -73,7 +100,7 @@ export function OrderForm({
 
   const today = todayIST()
 
-  const [vendorId, setVendorId] = useState('')
+  const [vendorId, setVendorId] = useState(prefill?.vendorId ?? '')
   const [orderDate, setOrderDate] = useState(today)
   const [leadTime, setLeadTime] = useState('45')
   // Kept separate so the user can nudge the date without changing lead time.
@@ -81,9 +108,24 @@ export function OrderForm({
   const [profile, setProfile] = useState<CheckpointProfile>('standard')
   const [priority, setPriority] = useState('normal')
   const [placedBy, setPlacedBy] = useState(defaultPlacedBy)
-  const [notes, setNotes] = useState('')
+  const [notes, setNotes] = useState(prefill?.notes ?? '')
 
-  const [items, setItems] = useState<ItemRow[]>([blankItem()])
+  const [items, setItems] = useState<ItemRow[]>(() =>
+    prefill && prefill.items.length > 0
+      ? prefill.items.map((p) => ({
+          ...blankItem(),
+          product_name: p.product_name,
+          design_code: p.design_code,
+          colour: p.colour,
+          category: p.category,
+          quantity: p.quantity,
+          unit: p.unit,
+          rate: isAdmin ? p.rate : null,
+          photoPath: p.photoPath,
+          photoPreview: p.photoPreview,
+        }))
+      : [blankItem()],
+  )
 
   const [totalAmount, setTotalAmount] = useState('')
   const [advance, setAdvance] = useState('')
@@ -165,8 +207,9 @@ export function OrderForm({
         total_amount: isAdmin ? (parseMoney(totalAmount) ?? (itemsTotal || null)) : null,
         advance_paid: isAdmin ? parseMoney(advance) : null,
         payment_notes: isAdmin ? paymentNotes : '',
+        purchase_list_id: prefill?.purchaseListId ?? null,
         items: items.map(
-          ({ key: _key, needsMeasurements, measurementRows, measurementUnit, photoPath, ...i }) => ({
+          ({ key: _key, needsMeasurements, measurementRows, measurementUnit, photoPath, photoPreview: _p, ...i }) => ({
             ...i,
             quantity: Number(i.quantity) || 1,
             rate: isAdmin ? (Number(i.rate) || null) : null,
@@ -191,6 +234,28 @@ export function OrderForm({
   return (
     <>
       <form onSubmit={submit} className="space-y-4">
+        {prefill ? (
+          <div className="rounded-md border border-gold/25 bg-gold-wash/50 p-3 text-[13px] leading-relaxed text-ink">
+            <p className="flex items-center gap-1.5 font-semibold text-gold">
+              <ShoppingBag className="size-4" />
+              From your visit to {prefill.vendorName} on {formatDate(prefill.visitDate)}
+            </p>
+            <p className="mt-1">
+              The {prefill.items.length} {prefill.items.length === 1 ? 'piece' : 'pieces'} you
+              photographed are already filled in below. Check them, add the lead time, and place
+              the order. The list is marked as ordered once you do.
+            </p>
+          </div>
+        ) : (
+          <p className="text-[13px] text-muted">
+            At the vendor&rsquo;s shop picking pieces in person?{' '}
+            <Link href="/purchase-lists/new" className="font-medium text-gold underline">
+              Build a purchase list
+            </Link>{' '}
+            instead — one photo per piece — and turn it into an order afterwards.
+          </p>
+        )}
+
         <FieldGroup title="Vendor">
           <Field label="Who are you ordering from?">
             <div className="flex gap-2">
@@ -421,7 +486,8 @@ export function OrderForm({
 
                   <PhotoField
                     value={item.photoPath}
-                    onChange={(path) => updateItem(item.key, { photoPath: path })}
+                    initialPreview={item.photoPreview ?? null}
+                    onChange={(path) => updateItem(item.key, { photoPath: path, photoPreview: null })}
                   />
 
                   <div className="space-y-2">

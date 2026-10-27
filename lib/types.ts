@@ -290,3 +290,51 @@ export interface DashboardRow {
   followup: Followup | null
   order: OrderWithContext
 }
+
+// ---------------------------------------------------------------------------
+// Purchase lists — pieces picked in person at the vendor's shop (migration 0005)
+// ---------------------------------------------------------------------------
+
+export type PurchaseListStatus = 'draft' | 'converted'
+
+export interface PurchaseList {
+  id: string
+  vendor_id: string
+  visit_date: DateStr
+  status: PurchaseListStatus
+  notes: string | null
+  /** The order this list became, once it has. */
+  order_id: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PurchaseListItem {
+  id: string
+  list_id: string
+  product_name: string | null
+  design_code: string | null
+  colour: string | null
+  category: ProductCategory
+  quantity: number
+  unit: Unit
+  notes: string | null
+  /** Path inside the private `order-photos` storage bucket. */
+  photo_path: string | null
+  /** True when a price was noted — visible to staff, the number is not. */
+  has_rate: boolean
+  sort_order: number
+  created_at: string
+}
+
+/** Admin-only. The price per piece as noted on the day, if it was known. */
+export interface PurchaseListItemFinance {
+  item_id: string
+  rate: number | null
+}
+
+export interface PurchaseListWithContext extends PurchaseList {
+  vendor: Pick<Vendor, 'id' | 'name' | 'company_name' | 'city'> | null
+  purchase_list_items: PurchaseListItem[]
+}

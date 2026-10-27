@@ -12,6 +12,9 @@ import type {
   OrderFinance,
   OrderItem,
   OrderWithContext,
+  PurchaseList,
+  PurchaseListItemFinance,
+  PurchaseListWithContext,
   PurchaseOrder,
   PurchaseOrderFinance,
   Vendor,
@@ -528,4 +531,83 @@ export function itemsSummary(items: Pick<OrderItem, 'product_name' | 'quantity' 
   if (items.length === 0) return 'No items'
   const first = `${items[0].quantity} ${items[0].unit} ${items[0].product_name}`
   return items.length === 1 ? first : `${first} +${items.length - 1} more`
+}
+
+// ---------------------------------------------------------------------------
+// Purchase lists — built at the vendor's shop, turned into orders later
+// ---------------------------------------------------------------------------
+
+const PURCHASE_LIST_SELECT = `
+  *,
+  vendor:vendors ( id, name, company_name, city ),
+  purchase_list_items ( * )
+`
+
+/** Every list, drafts first, newest visit first within each. */
+export async function getPurchaseLists(): Promise<PurchaseListWithContext[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('purchase_lists')
+    .select(PURCHASE_LIST_SELECT)
+    .order('visit_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(500)
+  // Before migration 0005 the table does not exist; show an empty page
+  // rather than an error, and let the page explain.
+  if (error) return []
+  const lists = (data ?? []) as unknown as PurchaseListWithContext[]
+  for (const l of lists) l.purchase_list_items.sort((a, b) => a.sort_order - b.sort_order)
+  return lists.sort((a, b) => (a.status === b.status ? 0 : a.status === 'draft' ? -1 : 1))
+}
+
+/** One list with its pieces, signed photo links and (for an admin) the prices. */
+export async function getPurchaseList(id: string, opts: { isAdmin: boolean }) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('purchase_lists')
+    .select(PURCHASE_LIST_SELECT)
+    .eq('id', id)
+    .maybeSingle()
+  if (error || !data) return null
+
+  const list = data as unknown as PurchaseListWithContext
+  list.purchase_list_items.sort((a, b) => a.sort_order - b.sort_order)
+
+  const itemIds = list.purchase_list_items.map((i) => i.id)
+  const [photoUrls, financeRes] = await Promise.all([
+    signPhotoUrls(list.purchase_list_items.map((i) => i.photo_path)),
+    opts.isAdmin && itemIds.length > 0
+      ? supabase.from('purchase_list_item_finance').select('*').in('item_id', itemIds)
+      : Promise.resolve({ data: [] as PurchaseListItemFinance[] }),
+  ])
+
+  const rates: Record<string, number | null> = {}
+  for (const f of (financeRes.data ?? []) as PurchaseListItemFinance[]) {
+    rates[f.item_id] = f.rate === null ? null : Number(f.rate)
+  }
+
+  return { list, photoUrls, rates }
+}
+
+/** The list an order was placed from, if any — for the link on the order page. */
+export async function getPurchaseListForOrder(orderId: string): Promise<PurchaseList | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('purchase_lists')
+    .select('*')
+    .eq('order_id', orderId)
+    .maybeSingle()
+  if (error) return null
+  return (data as PurchaseList | null) ?? null
+}
+
+/** How many drafts are waiting to become orders — for the nav badge. */
+export async function countDraftPurchaseLists(): Promise<number> {
+  const supabase = await createClient()
+  const { count, error } = await supabase
+    .from('purchase_lists')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'draft')
+  if (error) return 0
+  return count ?? 0
 }

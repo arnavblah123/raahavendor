@@ -2,9 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Camera, Images, Loader2, Trash2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
-import { PHOTO_BUCKET } from '@/lib/constants'
-import { newPhotoPath, PHOTO_ACCEPT, PHOTO_MAX_BYTES, resizeImage } from '@/lib/images'
+import { PHOTO_ACCEPT } from '@/lib/images'
+import { removePhoto, uploadPhoto } from '@/lib/photo-upload'
 import { cn } from '@/lib/utils'
 
 /**
@@ -23,22 +22,26 @@ export function PhotoField({
   onChange,
   label = 'Photo of the piece',
   className,
+  initialPreview = null,
 }: {
   value: string | null
   onChange: (path: string | null) => void
   label?: string
   className?: string
+  /** A signed link for a photo that already exists (e.g. from a purchase list). */
+  initialPreview?: string | null
 }) {
   const cameraRef = useRef<HTMLInputElement>(null)
   const galleryRef = useRef<HTMLInputElement>(null)
-  const [preview, setPreview] = useState<string | null>(null)
+  const [preview, setPreview] = useState<string | null>(initialPreview)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Release the object URL when the preview changes or the field unmounts.
+  // (A signed https link is not an object URL; revoking it is a harmless no-op.)
   useEffect(() => {
     return () => {
-      if (preview) URL.revokeObjectURL(preview)
+      if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview)
     }
   }, [preview])
 
@@ -49,28 +52,8 @@ export function PhotoField({
     setUploading(true)
 
     try {
-      const blob = await resizeImage(file)
-      if (blob.size > PHOTO_MAX_BYTES) {
-        setError('That photo is too large even after shrinking. Try another one.')
-        return
-      }
-
-      const path = newPhotoPath(blob.type)
-      const supabase = createClient()
-      const { error: upErr } = await supabase.storage
-        .from(PHOTO_BUCKET)
-        .upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false })
-
-      if (upErr) {
-        setError(
-          upErr.message.toLowerCase().includes('bucket')
-            ? 'Photo storage is not set up yet — run migration 0002 in Supabase.'
-            : `Could not upload the photo: ${upErr.message}`,
-        )
-        return
-      }
-
-      setPreview(URL.createObjectURL(blob))
+      const { path, preview: url } = await uploadPhoto(file)
+      setPreview(url)
       onChange(path)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not read that photo.')
@@ -85,12 +68,7 @@ export function PhotoField({
     onChange(null)
     setPreview(null)
     setError(null)
-    if (path) {
-      // Best effort: the policy lets you delete your own upload. If it fails
-      // the orphaned file is harmless.
-      const supabase = createClient()
-      await supabase.storage.from(PHOTO_BUCKET).remove([path])
-    }
+    await removePhoto(path)
   }
 
   const pickButton =

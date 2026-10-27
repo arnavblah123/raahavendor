@@ -115,6 +115,34 @@ Tap **Add** at the bottom of the screen.
    but empty, the app stops and lists them — go back and add them, or place
    the order anyway if that is deliberate.
 
+### Picking pieces at the vendor's shop
+
+When you are at the vendor's shop choosing pieces in person, do not try to
+fill in the order form standing there. Use a **purchase list** instead.
+
+1. Tap the **bag icon** at the top of the screen (on a computer, **Shop
+   visits** in the menu), then **New list**. Or open the vendor's page and tap
+   **At their shop? Start a purchase list**.
+2. Choose the vendor. The list saves itself from then on.
+3. For every piece you pick, tap **Take photo**. The photo becomes a line on
+   the list straight away. If the pictures are already on your phone, tap
+   **Gallery / files** and pick several at once.
+4. Under each photo, type **what it is** and **how many**. Both can wait —
+   the photo is what matters while you are in the shop.
+5. **Price** is optional. Type it if the vendor tells you; leave it blank if
+   it comes later. You will not see the number again afterwards, only a
+   "price has been noted" tick — Archana sees the amounts.
+6. **More details** opens the type, unit, design code, colour and a note, for
+   when you have a minute.
+7. When you are done — in the shop or later at ours — tap **Make an order from
+   this list**. The Place order screen opens with every piece and its photo
+   already filled in. Add the lead time, place the order and raise the PO as
+   usual.
+
+A list you have not turned into an order yet stays under **Still to order**
+on the Shop visits screen, so it cannot be forgotten. Only Archana can throw a
+list away.
+
 ### Raising the purchase order
 
 The moment the order is placed you are asked **"Raise a purchase order for the
@@ -280,7 +308,8 @@ No. Nothing is pushed or expires. Everything you missed will be waiting under
 
 **I cannot see any prices or amounts.**
 That is intentional for staff accounts. Only Archana can see money. That
-includes the invoice price you typed at inward — you can enter it, not read it.
+includes the invoice price you typed at inward and the price you noted on a
+purchase list — you can enter them, not read them.
 
 **The photo will not upload.**
 Check you are signed in and have a signal; photos are shrunk on your phone and

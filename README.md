@@ -36,19 +36,22 @@ follow the steps in order.
    storage bucket the photos live in.
 6. Once more with `supabase/migrations/0003_po_details.sql`, which adds the
    space for your company details on the purchase order.
-7. And finally `supabase/migrations/0004_vendor_address.sql`, which adds
+7. Then `supabase/migrations/0004_vendor_address.sql`, which adds
    address, state and pincode to vendors and fills them in for the vendors
    carried over from the old software.
+8. And finally `supabase/migrations/0005_purchase_lists.sql`, which adds
+   purchase lists — the pieces you photograph one by one when you pick them
+   in person at a vendor's shop.
 
 You should see *Success. No rows returned* each time. That is correct — it
 has just built all the tables, security rules, indexes and the photo bucket.
 
 You only ever do this once, in that order.
 
-> **Already running the app before purchase orders existed?** Just run
-> `0002_po_and_inward.sql`, `0003_po_details.sql` and `0004_vendor_address.sql`
-> on your existing project, in that order. Nothing you have entered
-> is touched. New orders are numbered `RAAHA-ORD-…` from now on so they cannot
+> **Already running the app?** Just run whichever of `0002_po_and_inward.sql`,
+> `0003_po_details.sql`, `0004_vendor_address.sql` and
+> `0005_purchase_lists.sql` you have not run yet, in that order. Nothing you
+> have entered is touched. New orders are numbered `RAAHA-ORD-…` from now on so they cannot
 > be confused with purchase order numbers; old orders keep their numbers.
 
 ### Step 3 — Create your login
@@ -197,6 +200,9 @@ straight away, where you can promote or disable them.
 | | Admin (you) | Staff |
 |---|---|---|
 | Place orders, log follow-ups, record dispatch | ✅ | ✅ |
+| Build a purchase list at a vendor's shop and turn it into an order | ✅ | ✅ |
+| Note a price on a purchase list | ✅ | ✅ writes it, never reads it back |
+| Throw away a purchase list | ✅ | ❌ |
 | Add photos and measurements to an order | ✅ | ✅ |
 | Raise a purchase order, print it, send it | ✅ | ✅ |
 | Inward goods against a PO and flag problems | ✅ | ✅ |
@@ -283,6 +289,43 @@ as a partial dispatch does.
 
 ---
 
+## Picking pieces in person — purchase lists
+
+Not every order starts on the phone. Often someone goes to the vendor's shop
+and picks pieces off the rail. **Shop visits** (the bag icon on a phone,
+*Shop visits* in the menu on a computer) is for that moment.
+
+- Choose the vendor, then **take a photo of each piece** as you pick it (or
+  pick several photos from the gallery at once). Every photo becomes a line
+  on the list immediately — name, quantity and price can be filled in while
+  the next piece is being photographed, or back at the shop.
+- The **price is optional**, because it often comes later. Staff can type it
+  in but never see it afterwards; they see a "price noted" tick, and the
+  number is only ever shown to an admin — the same rule as invoice prices at
+  inward. A staff member saving a list cannot wipe a price the owner typed.
+- The list **saves itself** a moment after every change, and photos upload
+  the instant they are taken, so a dropped signal costs seconds, not the
+  visit.
+- **Make an order from this list** opens the normal Place order screen with
+  every piece and its photo already filled in. Add the lead time, place the
+  order, raise the PO — the list is then marked *Ordered* and frozen, and the
+  order shows a *Picked in person* badge that links back to it.
+
+Lists that have not become orders yet wait under **Still to order** so a
+visit is never forgotten. Only an admin can throw a list away.
+
+What it looks like on a phone (sample data):
+
+| The list, as the owner sees it | The same list, as staff see it |
+|---|---|
+| ![Purchase list builder, admin view](docs/screenshots/purchase-lists/2-builder-admin.png) | ![Purchase list builder, staff view](docs/screenshots/purchase-lists/3-builder-staff.png) |
+
+| All lists | Placing the order from a list | A list that became an order |
+|---|---|---|
+| ![All purchase lists](docs/screenshots/purchase-lists/1-lists.png) | ![Order form pre-filled from a list](docs/screenshots/purchase-lists/5-order-from-list.png) | ![A converted list](docs/screenshots/purchase-lists/6-converted.png) |
+
+---
+
 ## Everyday use
 
 See **[HOW-TO-USE.md](./HOW-TO-USE.md)** — written in plain language for staff.
@@ -312,6 +355,7 @@ app/(app)/          the signed-in screens
     [id]/po/          the printable purchase order
     [id]/inward/      goods receipt against the PO
   inwards/            flagged pieces for the owner, and the receiving log
+  purchase-lists/     pieces photographed at the vendor's shop, turned into orders
   vendors/            list, add, scorecard
   reports/  settings/
   actions.ts          every write in the app
@@ -321,6 +365,7 @@ lib/
   measurements.ts     ordered-vs-measured comparison and flagging — pure, tested
   po.ts               financial-year PO numbering and the PO WhatsApp text
   images.ts           shrinks a phone photo before upload
+  photo-upload.ts     the upload itself, shared by the order form and purchase lists
   dates.ts            calendar dates in IST (never the server's timezone)
   money.ts            ₹ in the Indian lakh/crore system
   whatsapp.ts         message templates and wa.me links
@@ -328,6 +373,7 @@ lib/
 supabase/migrations/  the schema, security rules and database functions
   0001_init.sql         orders, follow-ups, dispatches
   0002_po_and_inward.sql photos, measurements, purchase orders, inwarding
+  0005_purchase_lists.sql lists built in person at a vendor's shop
 tests/                unit tests for scheduling, money, measurements and PO numbering
 ```
 
@@ -346,9 +392,9 @@ tests/                unit tests for scheduling, money, measurements and PO numb
   every logged-in user is the same database role — so hiding money from staff
   requires separate tables with their own policy. Do not move those columns back
   into the main tables.
-- **Dispatch, revision, order creation, PO creation and inwarding each run
-  inside one database function**, so a half-applied dispatch or inward cannot
-  corrupt the piece counts.
+- **Dispatch, revision, order creation, PO creation, inwarding and saving a
+  purchase list each run inside one database function**, so a half-applied
+  dispatch or inward cannot corrupt the piece counts.
 - **Photos never touch the Next.js server.** The browser shrinks the image and
   uploads it straight to the private `order-photos` bucket with the user's own
   session; pages render short-lived signed links. Nothing is public.
@@ -356,7 +402,10 @@ tests/                unit tests for scheduling, money, measurements and PO numb
   `inward_item_finance` table lets a member insert but only an admin select, so
   the person holding the invoice can type it in without the app ever showing
   them a price. `purchase_order_finance` follows the same admin-only rule as
-  `order_finance`.
+  `order_finance`. `purchase_list_item_finance` works like the inward one, with
+  a twist: `save_purchase_list()` only touches the price when the `rate` key is
+  present in the item, and the staff form omits it unless they typed one — so
+  staff cannot blank a price they cannot see.
 - **`qty_received` is not `qty_dispatched`.** Dispatched is what the vendor
   sent; received is what has been inwarded at the shop. `record_inward()`
   keeps the two consistent by logging a dispatch for anything that arrived

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronLeft, Mail, MessageCircle, Pencil, Phone, TriangleAlert } from 'lucide-react'
+import { Camera, ChevronLeft, Mail, MessageCircle, Pencil, Phone, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/server'
 import { getVendorCategories } from '@/lib/queries'
@@ -226,6 +226,18 @@ export default async function VendorPage({
           </p>
         )}
       </section>
+
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button asChild variant="gold" className="sm:flex-1">
+          <Link href={`/purchase-lists/new?vendor=${vendor.id}`}>
+            <Camera className="size-4" />
+            At their shop? Start a purchase list
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="sm:flex-1">
+          <Link href="/orders/new">Place an order</Link>
+        </Button>
+      </div>
 
       <OrderList title={`Open orders (${open.length})`} orders={open} today={today} empty="No open orders with this vendor." />
       <OrderList title={`Past orders (${past.length})`} orders={past} today={today} empty="No completed orders yet." />

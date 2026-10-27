@@ -231,6 +231,8 @@ export interface NewOrderInput {
   advance_paid?: number | null
   payment_notes?: string
   items: NewOrderItemInput[]
+  /** When the order is being placed from a purchase list made at the shop. */
+  purchase_list_id?: string | null
 }
 
 export async function createOrder(
@@ -289,8 +291,22 @@ export async function createOrder(
 
     if (error) return fail(error.message)
 
-    refreshOrderViews()
     const result = data as { id: string; order_no: string }
+
+    // Placed from a shop visit: mark the list so it cannot be used twice.
+    if (input.purchase_list_id) {
+      const { error: convErr } = await supabase.rpc('convert_purchase_list', {
+        p_list_id: input.purchase_list_id,
+        p_order_id: result.id,
+      })
+      // The order stands. The list simply stays a draft, which the owner
+      // can delete from the Purchase lists page.
+      if (convErr) console.error('convert_purchase_list failed:', convErr.message)
+      revalidatePath('/purchase-lists')
+      revalidatePath(`/purchase-lists/${input.purchase_list_id}`)
+    }
+
+    refreshOrderViews()
     return { ok: true, id: result.id, order_no: result.order_no }
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Something went wrong.')
@@ -655,6 +671,116 @@ export async function reopenInwardFlag(inwardItemId: string): Promise<ActionResu
       .eq('id', inwardItemId)
     if (error) return fail(error.message)
     revalidatePath('/inwards')
+    return { ok: true }
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Something went wrong.')
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Purchase lists — pieces picked in person at the vendor's shop
+// ---------------------------------------------------------------------------
+
+export interface PurchaseListItemInput {
+  /** Existing row id when editing; omit for a new piece. */
+  id?: string | null
+  /** Anything the screen uses to recognise the piece; echoed back with its id. */
+  key?: string
+  product_name?: string
+  design_code?: string
+  colour?: string
+  category?: string
+  quantity: number
+  unit?: string
+  notes?: string
+  photo_path?: string | null
+  /**
+   * Price per piece. Leave the key out to keep whatever is stored (a staff
+   * member cannot see it, so their form never sends it unless they typed
+   * one); send null to clear it.
+   */
+  rate?: number | null
+}
+
+export interface SavePurchaseListInput {
+  id?: string | null
+  vendor_id: string
+  visit_date: string
+  notes?: string
+  items: PurchaseListItemInput[]
+}
+
+const PHOTO_PATH_RE = /^items\/[\w.-]+$/
+
+export async function savePurchaseList(
+  input: SavePurchaseListInput,
+): Promise<ActionResult<{ id: string; itemCount: number; items: { key: string | null; id: string }[] }>> {
+  try {
+    await requireProfile()
+    const supabase = await createClient()
+
+    if (!input.vendor_id) return fail('Choose the vendor whose shop you are at.')
+    if (!input.visit_date) return fail('Please enter the date of the visit.')
+    if (input.items.some((i) => i.photo_path && !PHOTO_PATH_RE.test(i.photo_path))) {
+      return fail('One of the photos did not upload properly. Please add it again.')
+    }
+    for (const i of input.items) {
+      if (i.rate != null && (!Number.isFinite(i.rate) || i.rate < 0)) {
+        return fail('A price cannot be negative.')
+      }
+    }
+
+    const { data, error } = await supabase.rpc('save_purchase_list', {
+      p_list: {
+        id: input.id ?? '',
+        vendor_id: input.vendor_id,
+        visit_date: input.visit_date,
+        notes: input.notes ?? '',
+      },
+      p_items: input.items.map((i) => {
+        const row: Record<string, unknown> = {
+          id: i.id ?? '',
+          key: i.key ?? null,
+          product_name: i.product_name ?? '',
+          design_code: i.design_code ?? '',
+          colour: i.colour ?? '',
+          category: i.category ?? 'other',
+          quantity: Math.max(1, Math.floor(Number(i.quantity) || 1)),
+          unit: i.unit ?? 'pcs',
+          notes: i.notes ?? '',
+          photo_path: i.photo_path || '',
+        }
+        // Only when the key is present — see PurchaseListItemInput.rate.
+        if ('rate' in i) row.rate = i.rate == null ? null : Number(i.rate)
+        return row
+      }),
+    })
+    if (error) {
+      return fail(
+        /save_purchase_list|purchase_lists/i.test(error.message) && /not exist|schema cache/i.test(error.message)
+          ? 'Purchase lists are not set up yet — run migration 0005 in Supabase.'
+          : error.message,
+      )
+    }
+
+    const result = data as { id: string; item_count: number; items: { key: string | null; id: string }[] }
+    revalidatePath('/purchase-lists')
+    revalidatePath(`/purchase-lists/${result.id}`)
+    revalidatePath(`/vendors/${input.vendor_id}`)
+    return { ok: true, id: result.id, itemCount: result.item_count, items: result.items ?? [] }
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Something went wrong.')
+  }
+}
+
+/** Throw away a list. Admin only; a converted list keeps its order. */
+export async function deletePurchaseList(id: string): Promise<ActionResult> {
+  try {
+    await requireAdmin()
+    const supabase = await createClient()
+    const { error } = await supabase.from('purchase_lists').delete().eq('id', id)
+    if (error) return fail(error.message)
+    revalidatePath('/purchase-lists')
     return { ok: true }
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Something went wrong.')
