@@ -257,7 +257,9 @@ is the *proof*. Each step checks the previous one.
 
 1. **Placing the order** — for every piece the form asks for a **photo** of
    what is being ordered and, if the vendor is making it to size, the
-   **measurements**. Neither is compulsory, but if either is missing the app
+   **measurements**; otherwise a standard **size** (XS–XXL or a number).
+   There is also a **Changes to the piece** box for anything the vendor must
+   alter, which prints on the PO and is shown again at inward. Neither is compulsory, but if either is missing the app
    makes you say so before the order goes in. Photos are shrunk on the phone
    and kept in a private storage bucket only signed-in users can open.
 2. **Raise the PO** — one tap after placing the order (or any time later from

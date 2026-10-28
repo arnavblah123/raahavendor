@@ -44,6 +44,7 @@ export default async function NewOrderPage({
           category: i.category,
           quantity: i.quantity,
           unit: i.unit,
+          changes: i.notes ?? '',
           photoPath: i.photo_path,
           photoPreview: i.photo_path ? (photoUrls[i.photo_path] ?? null) : null,
           rate: isAdmin ? (rates[i.id] ?? null) : null,

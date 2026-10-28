@@ -52,6 +52,8 @@ export interface OrderPrefill {
     category: string
     quantity: number
     unit: string
+    /** The note made against the piece at the shop — becomes "changes to the piece". */
+    changes: string
     photoPath: string | null
     photoPreview: string | null
     /** Admin only; null when unknown or for staff. */
@@ -66,6 +68,7 @@ function blankItem(): ItemRow {
     design_code: '',
     colour: '',
     size: '',
+    description: '',
     category: 'lehenga',
     quantity: 1,
     unit: 'pcs',
@@ -120,6 +123,7 @@ export function OrderForm({
           category: p.category,
           quantity: p.quantity,
           unit: p.unit,
+          description: p.changes,
           rate: isAdmin ? p.rate : null,
           photoPath: p.photoPath,
           photoPreview: p.photoPreview,
@@ -512,11 +516,27 @@ export function OrderForm({
                         onUnitChange={(unit) => updateItem(item.key, { measurementUnit: unit })}
                       />
                     ) : (
-                      <p className="text-[12px] text-muted">
-                        Standard size — no measurements to check on arrival.
-                      </p>
+                      <SizeField
+                        value={item.size ?? ''}
+                        onChange={(size) => updateItem(item.key, { size })}
+                      />
                     )}
                   </div>
+
+                  <Field
+                    label="Changes to the piece"
+                    hint="optional — anything the vendor must alter or do differently"
+                  >
+                    <Textarea
+                      value={item.description ?? ''}
+                      onChange={(e) => updateItem(item.key, { description: e.target.value })}
+                      placeholder="e.g. Shorten sleeves by 2 in, add can-can, change dupatta to pink, remove tassels"
+                      rows={2}
+                    />
+                    <p className="text-[12px] text-muted">
+                      Printed on the purchase order and checked when the piece arrives.
+                    </p>
+                  </Field>
                 </div>
               </div>
             ))}
@@ -732,5 +752,54 @@ export function LadderPreview({
       )}
       <p className="sr-only">Today is {formatDate(today)}</p>
     </div>
+  )
+}
+
+/** Ready-made sizes to tap, or a number typed in — for a piece not made to measure. */
+export const SIZE_CHIPS = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const
+
+export function SizeField({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (size: string) => void
+}) {
+  const chip =
+    'inline-flex min-h-10 min-w-11 items-center justify-center rounded-md border px-3 text-[13px] font-semibold transition-colors'
+  return (
+    <Field label="Size" hint="tap one, or type a number such as 38">
+      <div className="flex flex-wrap gap-1.5">
+        {SIZE_CHIPS.map((sz) => {
+          const active = value.trim().toUpperCase() === sz
+          return (
+            <button
+              key={sz}
+              type="button"
+              onClick={() => onChange(active ? '' : sz)}
+              aria-pressed={active}
+              className={
+                chip +
+                (active
+                  ? ' border-gold bg-gold text-white'
+                  : ' border-line bg-white text-charcoal hover:bg-parchment')
+              }
+            >
+              {sz}
+            </button>
+          )
+        })}
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="or a number"
+          className="h-10 w-32"
+          inputMode="text"
+        />
+      </div>
+      <p className="text-[12px] text-muted">
+        Standard size — no measurements to check on arrival. Leave blank if it does not apply.
+      </p>
+    </Field>
   )
 }

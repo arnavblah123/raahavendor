@@ -18,6 +18,8 @@ export interface PoPdfLine {
   design_code: string | null
   category: string
   details: string
+  /** Alterations the vendor must make to the piece. */
+  changes: string | null
   measurements: string
   quantity: number
   unit: string
@@ -193,7 +195,11 @@ export async function buildPoPdf(input: PoPdfInput): Promise<Blob> {
     ]
       .filter(Boolean)
       .join('\n')
-    const details = [l.details || null, l.measurements ? `Measurements: ${l.measurements}` : null]
+    const details = [
+      l.details || null,
+      l.changes ? `Changes: ${l.changes}` : null,
+      l.measurements ? `Measurements: ${l.measurements}` : null,
+    ]
       .filter(Boolean)
       .join('\n')
     const row: (string | number)[] = [l.n, piece, details || '—', `${l.quantity} ${l.unit}`]
@@ -320,7 +326,7 @@ export async function buildPoPdf(input: PoPdfInput): Promise<Blob> {
   doc.setTextColor(MUTED)
   doc.text(
     doc.splitTextToSize(
-      `Please quote ${input.poNo} on the delivery challan and invoice. Pieces will be checked against the photos and measurements above on arrival.`,
+      `Please quote ${input.poNo} on the delivery challan and invoice. Pieces will be checked against the photos, changes and measurements above on arrival.`,
       95,
     ) as string[],
     margin,

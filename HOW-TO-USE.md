@@ -110,8 +110,13 @@ Tap **Add** at the bottom of the screen.
 8. **If the vendor is making it to size, tick *This piece is made to
    measurements*** and enter them. Tap the grey chips (Bust, Waist, Length…)
    to add the usual ones, or type your own. Choose inches or cm at the top.
-   Leave the box unticked for standard sizes.
-9. Tap **Place order**. If any piece has no photo, or measurements are ticked
+   **If it is a standard size instead, leave the box unticked and tap the
+   size** — XS, S, M, L, XL, XXL — or type a number such as 38.
+9. **Changes to the piece** — write down anything the vendor must alter or
+   do differently: *"shorten sleeves by 2 in"*, *"add can-can"*, *"change
+   dupatta to pink"*. It prints on the purchase order and is shown again when
+   the piece is inwarded, so whoever receives it knows what to check.
+10. Tap **Place order**. If any piece has no photo, or measurements are ticked
    but empty, the app stops and lists them — go back and add them, or place
    the order anyway if that is deliberate.
 
@@ -211,10 +216,12 @@ For every piece on the PO:
    still expected; set it to 0 if that design did not come.
 2. **Price per piece** — copy it from the vendor's invoice exactly. You will
    not see this again afterwards; only Archana can.
-3. **Check the measurements** — if the order had measurements, you will see
+3. **Check the changes** — if the order asked for alterations, they are shown
+   under the piece. Make sure they were done.
+4. **Check the measurements** — if the order had measurements, you will see
    them listed with a box next to each. **Measure the piece and type what you
    get.** The difference shows up straight away, in red if it is not the same.
-4. **If anything differs, the app tells you to flag it.** Tick *Flag a problem
+5. **If anything differs, the app tells you to flag it.** Tick *Flag a problem
    for the owner* and **write down what is wrong** in plain words — *"Waist
    came 31, ordered 30 — too tight"*. You cannot save until you have written
    it. You can flag a piece for any other reason too: damage, wrong colour,
