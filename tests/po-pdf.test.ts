@@ -10,8 +10,8 @@ describe('PO PDF', () => {
       from: { company_name: 'NB TEXTILE', tagline: 'Raaha by Archana Bansal', address: '12 Park Street\nKolkata 700016', phone: '+91 98300 00000', email: 'orders@nbtextile.in', gstin: '19ABCDE1234F1Z5', signatory: 'Authorised signatory' },
       vendor: { name: 'Shyam Fabrics', company_name: null, contact_person: 'Ramesh', address: '12 Park Street', city: 'Kolkata 700016, West Bengal', phone: '+919812345678', email: null, gst_no: null },
       lines: [
-        { n: 1, product_name: 'Bridal Lehenga', design_code: 'BL-101', category: 'Lehenga', details: 'Red · M', measurements: 'Waist 30 · Skirt length 42 in', quantity: 2, unit: 'pcs', rate: 20000, amount: 40000, photoUrl: 'https://example.invalid/x.jpg' },
-        { n: 2, product_name: 'Anarkali', design_code: null, category: 'Anarkali', details: '', measurements: '', quantity: 3, unit: 'pcs', rate: null, amount: null, photoUrl: null },
+        { n: 1, product_name: 'Bridal Lehenga', design_code: 'BL-101', category: 'Lehenga', details: 'Red · Size M', changes: 'Shorten sleeves by 2 in', measurements: 'Waist 30 · Skirt length 42 in', quantity: 2, unit: 'pcs', rate: 20000, amount: 40000, photoUrl: 'https://example.invalid/x.jpg' },
+        { n: 2, product_name: 'Anarkali', design_code: null, category: 'Anarkali', details: '', changes: null, measurements: '', quantity: 3, unit: 'pcs', rate: null, amount: null, photoUrl: null },
       ],
       showMoney: true, total: 40000, advance: 10000,
       terms: 'Payment 30 days after delivery.', notes: null,

@@ -231,12 +231,16 @@ export default async function OrderDetailPage({
                         {[
                           PRODUCT_CATEGORY_LABELS[i.category],
                           i.colour,
-                          i.size,
-                          i.description,
+                          i.size ? `Size ${i.size}` : null,
                         ]
                           .filter(Boolean)
                           .join(' · ')}
                       </p>
+                      {i.description && (
+                        <p className="mt-0.5 text-[12px] text-ink">
+                          <span className="font-medium">Changes:</span> {i.description}
+                        </p>
+                      )}
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="text-[14px] font-medium text-charcoal">

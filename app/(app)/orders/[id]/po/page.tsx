@@ -100,7 +100,8 @@ export default async function PurchaseOrderPage({ params }: { params: Promise<{ 
         product_name: l.product_name,
         design_code: l.design_code,
         category: PRODUCT_CATEGORY_LABELS[l.category],
-        details: [l.colour, l.size, l.description].filter(Boolean).join(' · '),
+        details: [l.colour, l.size ? `Size ${l.size}` : null].filter(Boolean).join(' · '),
+        changes: l.description,
         measurements: m.length > 0 ? formatMeasurements(m, l.measurement_unit) : '',
         quantity: l.quantity,
         unit: l.unit,
@@ -241,7 +242,12 @@ export default async function PurchaseOrderPage({ params }: { params: Promise<{ 
                       </div>
                     </td>
                     <td className="py-3 pr-2 text-ink">
-                      {[l.colour, l.size, l.description].filter(Boolean).join(' · ') || '—'}
+                      {[l.colour, l.size ? `Size ${l.size}` : null].filter(Boolean).join(' · ') || '—'}
+                      {l.description && (
+                        <p className="mt-1">
+                          <span className="font-medium">Changes:</span> {l.description}
+                        </p>
+                      )}
                       {measurements.length > 0 && (
                         <p className="mt-1">
                           <span className="font-medium">Measurements:</span>{' '}

@@ -241,7 +241,7 @@ export function InwardForm({
                       {l.line.product_name}
                     </p>
                     <p className="mt-0.5 text-[12px] text-muted">
-                      {[l.line.colour, l.line.size].filter(Boolean).join(' · ')}
+                      {[l.line.colour, l.line.size ? `Size ${l.line.size}` : null].filter(Boolean).join(' · ')}
                       {[l.line.colour, l.line.size].some(Boolean) && ' · '}
                       Ordered {l.line.quantity} · Already received {l.received} ·{' '}
                       <span className={`font-medium ${locked ? 'text-done' : 'text-today'}`}>
@@ -291,6 +291,16 @@ export function InwardForm({
                         Type the price exactly as it is on the vendor&apos;s invoice. Only the owner
                         can see it afterwards.
                       </p>
+                    )}
+
+                    {l.line.description && (
+                      <div className="rounded-md border border-gold/30 bg-gold-wash/40 p-2.5 text-[13px] text-ink">
+                        <span className="font-semibold text-gold">Changes asked for:</span>{' '}
+                        {l.line.description}
+                        <span className="block text-[12px] text-muted">
+                          Check they were done. Flag the piece below if not.
+                        </span>
+                      </div>
                     )}
 
                     {l.measurements.length > 0 && (
